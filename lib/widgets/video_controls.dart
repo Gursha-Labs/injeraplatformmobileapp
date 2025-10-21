@@ -88,21 +88,6 @@ class VideoControls extends StatelessWidget {
 
                 _buildActionButton(Icons.location_on, 'Visit'),
                 const SizedBox(height: 20),
-
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white.withOpacity(0.3)),
-                  ),
-                  child: const Icon(
-                    Icons.ads_click,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
               ],
             ),
           ),

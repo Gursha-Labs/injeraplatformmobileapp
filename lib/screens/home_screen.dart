@@ -57,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ? const LoadingIndicator()
           : Stack(
               children: [
-                // Full screen PageView - Exactly like TikTok
                 PageView.builder(
                   controller: _pageController,
                   scrollDirection: Axis.vertical,
@@ -70,7 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     return Stack(
                       children: [
-                        // Full screen video player
                         SizedBox(
                           width: MediaQuery.of(context).size.width,
                           height: MediaQuery.of(context).size.height,
@@ -79,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             isPlaying: index == _currentPage,
                           ),
                         ),
-                        // Video controls overlay
+
                         VideoControls(video: _videos[index]),
                       ],
                     );
