@@ -8,8 +8,8 @@ class VideoService {
   VideoService._internal();
 
   static const String baseUrl = 'https://api.pexels.com/videos';
-  static const String apiKey = "";
-  /* 'Hm6chhCZB5j3uwQc6raftXAdCVkK3xbMqYAL7ek0BNKfPtu3pFvD4cuN'; */ // Get free key from pexels.com
+  static const String apiKey =
+      'Hm6chhCZB5j3uwQc6raftXAdCVkK3xbMqYAL7ek0BNKfPtu3pFvD4cuN'; // Get free key from pexels.com
 
   Future<List<Video>> getVideos() async {
     try {

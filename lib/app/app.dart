@@ -1,8 +1,10 @@
+// main.dart
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
 import '../screens/games_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/auth/welcome_screen.dart';
 import 'theme.dart';
 
 class InjeraApp extends StatelessWidget {
@@ -14,7 +16,7 @@ class InjeraApp extends StatelessWidget {
       title: 'Injera',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      home: const MainScreen(),
+      home: const MainScreen(), // Start with welcome screen
     );
   }
 }
