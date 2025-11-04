@@ -1,10 +1,15 @@
-// main.dart
+// app/app.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:injera/screens/auth/login_screen.dart';
+import 'package:injera/screens/auth/otp_verification_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/home_screen.dart';
 import '../screens/games_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/profile_screen.dart';
-import '../screens/auth/welcome_screen.dart';
+import '../screens/auth/signup_screen.dart';
+import '../providers/auth_provider.dart';
 import 'theme.dart';
 
 class InjeraApp extends StatelessWidget {
@@ -12,14 +17,60 @@ class InjeraApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Injera',
-      theme: AppTheme.darkTheme,
-      debugShowCheckedModeBanner: false,
-      home: const MainScreen(), // Start with welcome screen
+    return ProviderScope(
+      child: MaterialApp(
+        title: 'Injera',
+        theme: AppTheme.darkTheme,
+        debugShowCheckedModeBanner: false,
+        home: const AuthWrapper(),
+      ),
     );
   }
 }
+
+class AuthWrapper extends ConsumerWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+
+    // Show loading screen only on initial app start
+    if (authState.status == AuthStatus.unauthenticated) {
+      return const LoginScreen();
+    }
+
+    // Handle different auth states
+    return _buildContentBasedOnAuthState(authState);
+  }
+
+  Widget _buildContentBasedOnAuthState(AuthState authState) {
+    switch (authState.status) {
+      case AuthStatus.loading:
+        return _buildLoadingScreen();
+      case AuthStatus.verificationRequired:
+        return const OtpVerificationScreen();
+      case AuthStatus.authenticated:
+        return const MainScreen();
+      case AuthStatus.unauthenticated:
+      default:
+        return const LoginScreen();
+    }
+  }
+
+  Widget _buildLoadingScreen() {
+    return const Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFE2C55)),
+        ),
+      ),
+    );
+  }
+}
+
+// Remove the old AuthWrapper and _AuthWrapperState classes completely
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

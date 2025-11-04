@@ -94,7 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Points Display
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
