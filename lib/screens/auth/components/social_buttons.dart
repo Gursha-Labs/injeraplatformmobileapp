@@ -8,14 +8,6 @@ class SocialButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _buildSocialButton(
-          iconPath:
-              'assets/icons/facebook.png', // Add these assets to your project
-          text: 'Continue with Facebook',
-          backgroundColor: const Color(0xFF1877F2),
-          textColor: Colors.white,
-          onPressed: () => _handleSocialLogin('facebook'),
-        ),
         const SizedBox(height: 12),
         _buildSocialButton(
           iconPath: 'assets/icons/google.png',
@@ -23,22 +15,6 @@ class SocialButtons extends StatelessWidget {
           backgroundColor: Colors.white,
           textColor: Colors.black,
           onPressed: () => _handleSocialLogin('google'),
-        ),
-        const SizedBox(height: 12),
-        _buildSocialButton(
-          iconPath: 'assets/icons/apple.png',
-          text: 'Continue with Apple',
-          backgroundColor: Colors.black,
-          textColor: Colors.white,
-          onPressed: () => _handleSocialLogin('apple'),
-        ),
-        const SizedBox(height: 12),
-        _buildSocialButton(
-          iconPath: 'assets/icons/twitter.png',
-          text: 'Continue with Twitter',
-          backgroundColor: const Color(0xFF1DA1F2),
-          textColor: Colors.white,
-          onPressed: () => _handleSocialLogin('twitter'),
         ),
       ],
     );
@@ -68,7 +44,6 @@ class SocialButtons extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Using Image asset for platform-specific icons
             Image.asset(
               iconPath,
               width: 20,
