@@ -1,57 +1,65 @@
-// app/app.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/screens/auth/login_screen.dart';
 import 'package:injera/screens/auth/otp_verification_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../screens/home_screen.dart';
-import '../screens/games_screen.dart';
-import '../screens/search_screen.dart';
-import '../screens/profile_screen.dart';
-import '../screens/auth/signup_screen.dart';
-import '../providers/auth_provider.dart';
+import 'package:injera/screens/auth/signup_screen.dart';
+import 'package:injera/providers/auth_provider.dart';
+import 'package:injera/screens/games_screen.dart';
+import 'package:injera/screens/home_screen.dart';
+import 'package:injera/screens/profile_screen.dart';
+import 'package:injera/screens/search_screen.dart';
 import 'theme.dart';
 
-class InjeraApp extends StatelessWidget {
+class InjeraApp extends ConsumerWidget {
   const InjeraApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ProviderScope(
-      child: MaterialApp(
-        title: 'Injera',
-        theme: AppTheme.darkTheme,
-        debugShowCheckedModeBanner: false,
-        home: const AuthWrapper(),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp(
+      title: 'Injera',
+      theme: AppTheme.darkTheme,
+      debugShowCheckedModeBanner: false,
+      home: const AuthWrapper(),
     );
   }
 }
 
-class AuthWrapper extends ConsumerWidget {
+class AuthWrapper extends ConsumerStatefulWidget {
   const AuthWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends ConsumerState<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authProvider.notifier).checkAuthStatus();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // Show loading screen only on initial app start
-    if (authState.status == AuthStatus.unauthenticated) {
-      return const LoginScreen();
+    // Show loading screen while checking auth status
+    if (authState.status == AuthStatus.loading) {
+      return _buildLoadingScreen();
     }
 
-    // Handle different auth states
+    // Route based on auth state
     return _buildContentBasedOnAuthState(authState);
   }
 
   Widget _buildContentBasedOnAuthState(AuthState authState) {
     switch (authState.status) {
-      case AuthStatus.loading:
-        return _buildLoadingScreen();
-      case AuthStatus.verificationRequired:
-        return const OtpVerificationScreen();
       case AuthStatus.authenticated:
         return const MainScreen();
+      case AuthStatus.verificationRequired:
+        return const OtpVerificationScreen();
       case AuthStatus.unauthenticated:
       default:
         return const LoginScreen();
@@ -70,8 +78,6 @@ class AuthWrapper extends ConsumerWidget {
   }
 }
 
-// Remove the old AuthWrapper and _AuthWrapperState classes completely
-
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -83,10 +89,10 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const HomeScreen(),
-    const GamesScreen(),
-    const SearchScreen(),
-    const ProfileScreen(),
+    const HomeScreen(), // Replace with your HomeScreen
+    const GamesScreen(), // Replace with your GamesScreen
+    const SearchScreen(), // Replace with your SearchScreen
+    const ProfileScreen(), // Replace with your ProfileScreen
   ];
 
   void _onTabTapped(int index) {
