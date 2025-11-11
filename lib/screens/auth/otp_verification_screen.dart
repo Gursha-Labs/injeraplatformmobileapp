@@ -1,23 +1,22 @@
 // screens/auth/otp_verification_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:injera/app/app.dart';
 import 'package:injera/providers/auth_provider.dart';
 
-class OtpVerificationScreen extends StatefulWidget {
+class OtpVerificationScreen extends ConsumerStatefulWidget {
   const OtpVerificationScreen({super.key});
 
   @override
-  State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
+  ConsumerState<OtpVerificationScreen> createState() =>
+      _OtpVerificationScreenState();
 }
 
-class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
+class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   final List<TextEditingController> _otpControllers = List.generate(
     6,
     (_) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
-  bool _showSuccessMessage = false;
 
   @override
   void initState() {
@@ -50,6 +49,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
@@ -66,43 +67,26 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Consumer(
-            builder: (context, ref, child) {
-              final authState = ref.watch(authProvider);
-
-              // Show success message and navigate when verified
-              if (authState.status == AuthStatus.authenticated &&
-                  !_showSuccessMessage) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  setState(() {
-                    _showSuccessMessage = true;
-                  });
-                  _showSuccessAndNavigate(context);
-                });
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 40),
-                  _buildHeader(authState),
-                  const SizedBox(height: 32),
-                  _buildOtpFields(),
-                  const SizedBox(height: 32),
-                  _buildVerifyButton(ref, authState),
-                  const SizedBox(height: 20),
-                  _buildResendCode(),
-                  if (authState.error != null) ...[
-                    const SizedBox(height: 20),
-                    _buildErrorText(authState.error!),
-                  ],
-                  if (_showSuccessMessage) ...[
-                    const SizedBox(height: 20),
-                    _buildSuccessText(),
-                  ],
-                ],
-              );
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 40),
+              _buildHeader(authState),
+              const SizedBox(height: 32),
+              _buildOtpFields(),
+              const SizedBox(height: 32),
+              _buildVerifyButton(authState),
+              const SizedBox(height: 20),
+              _buildResendCode(),
+              if (authState.error != null) ...[
+                const SizedBox(height: 20),
+                _buildMessageText(authState.error!, isError: true),
+              ],
+              if (authState.message != null) ...[
+                const SizedBox(height: 20),
+                _buildMessageText(authState.message!, isError: false),
+              ],
+            ],
           ),
         ),
       ),
@@ -126,13 +110,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           'We sent a 6-digit code to ${authState.user?.email}',
           style: TextStyle(color: Colors.grey[400], fontSize: 16),
         ),
-        if (authState.message != null && !_showSuccessMessage) ...[
-          const SizedBox(height: 8),
-          Text(
-            authState.message!,
-            style: TextStyle(color: Colors.green[400], fontSize: 14),
-          ),
-        ],
       ],
     );
   }
@@ -181,11 +158,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     );
   }
 
-  Widget _buildVerifyButton(WidgetRef ref, AuthState authState) {
+  Widget _buildVerifyButton(AuthState authState) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: authState.isLoading ? null : () => _verifyOtp(ref),
+        onPressed: authState.isLoading ? null : _verifyOtp,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFE2C55),
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -236,56 +213,31 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     );
   }
 
-  Widget _buildErrorText(String error) {
-    // Clean up the error message for better user experience
-    String displayError = error;
-    if (error.contains('Invalid JSON token') || error.contains('json')) {
-      displayError =
-          'Invalid verification code. Please check the code and try again.';
-    } else if (error.contains('Connection') ||
-        error.contains('Socket') ||
-        error.contains('Network')) {
-      displayError =
-          'Network error. Please check your connection and try again.';
-    }
-
+  Widget _buildMessageText(String text, {bool isError = false}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red[900]!.withOpacity(0.3),
+        color: isError
+            ? Colors.red[900]!.withOpacity(0.3)
+            : Colors.green[900]!.withOpacity(0.3),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red),
+        border: Border.all(color: isError ? Colors.red : Colors.green),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: Colors.red[300], size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(displayError, style: TextStyle(color: Colors.red[300])),
+          Icon(
+            isError ? Icons.error_outline : Icons.check_circle,
+            color: isError ? Colors.red[300] : Colors.green[300],
+            size: 20,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSuccessText() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.green[900]!.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.green),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.check_circle, color: Colors.green[300], size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Email verified successfully! Redirecting to home screen...',
-              style: TextStyle(color: Colors.green[300]),
+              text,
+              style: TextStyle(
+                color: isError ? Colors.red[300] : Colors.green[300],
+              ),
             ),
           ),
         ],
@@ -293,31 +245,48 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     );
   }
 
-  void _verifyOtp(WidgetRef ref) {
+  Future<void> _verifyOtp() async {
     final otp = _otpControllers.map((controller) => controller.text).join();
+
     if (otp.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter 6-digit OTP code'),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
 
-    ref.read(authProvider.notifier).verifyOtp(otp);
+    if (otp.contains(RegExp(r'[^0-9]'))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('OTP should contain only numbers'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    final result = await ref.read(authProvider.notifier).verifyOtp(otp);
+
+    if (result.success) {
+      // Navigation to main screen is handled by AuthWrapper
+      _showSuccessMessage('Email verified successfully!');
+    }
   }
 
-  void _showSuccessAndNavigate(BuildContext context) {
-    // Show success message for 2 seconds then navigate
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-          (route) => false,
-        );
-      }
-    });
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }

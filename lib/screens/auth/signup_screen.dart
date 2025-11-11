@@ -1,9 +1,8 @@
-// screens/auth/signup_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/models/user_models.dart';
 import 'package:injera/providers/auth_provider.dart';
-import 'package:injera/screens/auth/otp_verification_screen.dart';
+import 'package:injera/screens/auth/verification_screen.dart';
 import 'components/auth_button.dart';
 import 'components/auth_text_field.dart';
 import 'components/social_buttons.dart';
@@ -28,7 +27,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(authProvider.notifier).resetState();
     });
@@ -38,8 +36,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleAuthStateChanges(authState);
+    // Listen for successful registration and navigate to verification
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.requiresVerification && next.user != null) {
+        // Navigate to verification screen when verification is required
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VerificationScreen(email: next.user!.email),
+            ),
+          );
+        });
+      }
     });
 
     return Scaffold(
@@ -80,30 +89,45 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     );
   }
 
-  void _handleAuthStateChanges(AuthState authState) {
-    if (authState.status == AuthStatus.verificationRequired) {
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            authState.message ??
-                'Registration successful! Please check your email for OTP.',
-          ),
-          backgroundColor: Colors.white,
-          behavior: SnackBarBehavior.floating,
-        ),
+  // ... keep all your existing _build methods the same (_buildSignupForm, _buildUserTypeSelector, etc.)
+
+  Future<void> _signup() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final email = _emailController.text.trim();
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    // Double check password match
+    if (password != confirmPassword) {
+      // This error will be shown in the error message area
+      ref.read(authProvider.notifier).state = AuthState(
+        status: AuthStatus.unauthenticated,
+        error: 'Passwords do not match',
       );
-      // The navigation to OTP screen will be handled by AuthWrapper
-    } else if (authState.status == AuthStatus.unauthenticated &&
-        authState.error != null) {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authState.error!),
-          backgroundColor: Colors.grey[800],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    final result = await ref
+        .read(authProvider.notifier)
+        .signup(
+          email: email,
+          username: username,
+          password: password,
+          type: _selectedType,
+        );
+
+    if (result.success && result.requiresVerification) {
+      // Navigation is handled by ref.listen above
+      print('Registration successful, navigating to verification...');
+    } else if (!result.success) {
+      // Error is automatically displayed through the state
+      print('Registration failed: ${result.error}');
     }
   }
 
@@ -248,89 +272,71 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Widget _buildSignupButton(AuthState authState) {
-    return AuthButton(
-      text: 'Sign up',
-      onPressed: authState.isLoading ? null : _signup,
-      backgroundColor: Colors.white,
-      textColor: Colors.black,
-      isLoading: authState.isLoading,
+    return Column(
+      children: [
+        if (authState.error != null) ...[
+          _buildMessageText(authState.error!, isError: true),
+          const SizedBox(height: 16),
+        ],
+        if (authState.message != null) ...[
+          _buildMessageText(authState.message!, isError: false),
+          const SizedBox(height: 16),
+        ],
+        AuthButton(
+          text: 'Sign up',
+          onPressed: authState.isLoading ? null : _signup,
+          backgroundColor: Colors.white,
+          textColor: Colors.black,
+          isLoading: authState.isLoading,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMessageText(String text, {bool isError = false}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isError
+            ? Colors.red[900]!.withOpacity(0.3)
+            : Colors.green[900]!.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: isError ? Colors.red : Colors.green),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isError ? Icons.error_outline : Icons.check_circle,
+            color: isError ? Colors.red[300] : Colors.green[300],
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isError ? Colors.red[300] : Colors.green[300],
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildDivider() {
     return Row(
       children: [
-        Expanded(child: Container(height: 1, color: Colors.grey[700])),
+        Expanded(child: Container(height: 1, color: Colors.grey[700]!)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text('OR', style: TextStyle(color: Colors.grey[400])),
         ),
-        Expanded(child: Container(height: 1, color: Colors.grey[700])),
+        Expanded(child: Container(height: 1, color: Colors.grey[700]!)),
       ],
     );
-  }
-
-  // Alternative signup screen with manual navigation
-  Future<void> _signup() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    final email = _emailController.text.trim();
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
-
-    // Double check password match (in case validator didn't trigger)
-    if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Passwords do not match'),
-          backgroundColor: Colors.grey[800],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    try {
-      print("i am trying ");
-      await ref
-          .read(authProvider.notifier)
-          .signup(email, username, password, _selectedType);
-      print("i can get the current state");
-
-      final currentState = ref.read(authProvider);
-
-      if (currentState.status == AuthStatus.verificationRequired) {
-        // Navigate manually to OTP screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const OtpVerificationScreen(),
-          ),
-        );
-        print("hello i am there");
-      } else if (currentState.error != null) {
-        print("hanim hanim");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(currentState.error!),
-            backgroundColor: Colors.grey[800],
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      print("chgr chgr");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Signup failed: $e'),
-          backgroundColor: Colors.grey[800],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
   }
 
   @override
