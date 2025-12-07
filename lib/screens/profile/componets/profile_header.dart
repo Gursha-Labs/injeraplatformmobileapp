@@ -1,24 +1,29 @@
 // screens/profile/components/profile_header.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:injera/providers/theme_provider.dart';
+import 'package:injera/theme/app_colors.dart';
 
-class ProfileHeader extends StatelessWidget {
+class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = ref.watch(themeProvider).isDarkMode;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
         children: [
-          _buildProfilePicture(),
+          _buildProfilePicture(isDark),
           const SizedBox(width: 20),
-          _buildProfileInfo(),
+          _buildProfileInfo(isDark),
         ],
       ),
     );
   }
 
-  Widget _buildProfilePicture() {
+  Widget _buildProfilePicture(bool isDark) {
     return Stack(
       children: [
         Container(
@@ -26,13 +31,14 @@ class ProfileHeader extends StatelessWidget {
           height: 80,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.grey, width: 1),
+            border: Border.all(
+              color: isDark ? AppColors.borderDark : AppColors.borderLight,
+              width: 1,
+            ),
           ),
           child: const CircleAvatar(
             backgroundColor: Colors.grey,
-            backgroundImage: NetworkImage(
-              'https://picsum.photos/200', // Replace with actual image
-            ),
+            backgroundImage: NetworkImage('https://picsum.photos/200'),
           ),
         ),
         Positioned(
@@ -40,17 +46,19 @@ class ProfileHeader extends StatelessWidget {
           right: 0,
           child: Container(
             padding: const EdgeInsets.all(2),
-            decoration: const BoxDecoration(
-              color: Colors.black,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.backgroundDark
+                  : AppColors.backgroundLight,
               shape: BoxShape.circle,
             ),
             child: Container(
               padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFE2C55),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFE2C55),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add, color: Colors.white, size: 14),
+              child: Icon(Icons.add, color: AppColors.pureWhite, size: 14),
             ),
           ),
         ),
@@ -58,15 +66,17 @@ class ProfileHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileInfo() {
+  Widget _buildProfileInfo(bool isDark) {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '@username',
             style: TextStyle(
-              color: Colors.white,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -74,7 +84,12 @@ class ProfileHeader extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'User Name',
-            style: TextStyle(color: Colors.grey[400], fontSize: 14),
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+              fontSize: 14,
+            ),
           ),
         ],
       ),

@@ -2,12 +2,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/providers/auth_provider.dart';
+import 'package:injera/providers/theme_provider.dart';
 import 'package:injera/screens/profile/componets/action_buttons.dart';
 import 'package:injera/screens/profile/componets/bio_section.dart';
 import 'package:injera/screens/profile/componets/profile_header.dart';
 import 'package:injera/screens/profile/componets/stats_row.dart';
 import 'package:injera/screens/profile/componets/tab_selector.dart';
 import 'package:injera/screens/profile/componets/video_grid.dart';
+import 'package:injera/theme/app_colors.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -35,22 +37,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _showLogoutDialog(BuildContext context) async {
+    final isDark = ref.read(themeProvider).isDarkMode;
+
     return showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.grey[900],
-          title: const Text('Logout', style: TextStyle(color: Colors.white)),
-          content: const Text(
+          backgroundColor: isDark
+              ? AppColors.surfaceDark
+              : AppColors.surfaceLight,
+          title: Text(
+            'Logout',
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
+            ),
+          ),
+          content: Text(
             'Are you sure you want to logout?',
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
+              child: Text(
                 'Cancel',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                ),
               ),
             ),
             TextButton(
@@ -58,7 +79,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Navigator.of(context).pop();
                 _performLogout();
               },
-              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+              child: Text('Logout', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -69,9 +90,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _performLogout() async {
     try {
       await ref.read(authProvider.notifier).logout();
-      // The navigation will be handled by your AuthWrapper since the state changed
     } catch (e) {
-      // Handle any potential errors during logout
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -85,9 +104,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeProvider).isDarkMode;
+
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: _buildAppBar(),
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
+      appBar: _buildAppBar(isDark),
       body: NestedScrollView(
         controller: _scrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -95,37 +118,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             SliverToBoxAdapter(
               child: Column(
                 children: [
-                  const ProfileHeader(),
-                  const StatsRow(),
-                  const BioSection(),
-                  const ActionButtons(),
-                  const TabSelector(),
+                  ProfileHeader(),
+                  StatsRow(),
+                  BioSection(),
+                  ActionButtons(),
+                  TabSelector(),
                 ],
               ),
             ),
           ];
         },
-        body: const VideoGrid(),
+        body: VideoGrid(),
       ),
     );
   }
 
-  AppBar _buildAppBar() {
+  AppBar _buildAppBar(bool isDark) {
     return AppBar(
-      backgroundColor: Colors.black,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       elevation: 0,
       title: AnimatedOpacity(
         opacity: _showAppBarTitle ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 200),
-        child: const Text(
+        child: Text(
           'username',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+      ),
+      iconTheme: IconThemeData(
+        color: isDark ? AppColors.iconDark : AppColors.iconLight,
       ),
       actions: [
         PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, color: Colors.white),
-          color: Colors.grey[900],
+          icon: Icon(
+            Icons.more_vert,
+            color: isDark ? AppColors.iconDark : AppColors.iconLight,
+          ),
+          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
           onSelected: (value) {
             if (value == 'logout') {
               _showLogoutDialog(context);
@@ -133,13 +169,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           },
           itemBuilder: (BuildContext context) {
             return [
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout, color: Colors.white70),
+                    Icon(
+                      Icons.logout,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
+                    ),
                     SizedBox(width: 8),
-                    Text('Logout', style: TextStyle(color: Colors.white70)),
+                    Text(
+                      'Logout',
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
+                      ),
+                    ),
                   ],
                 ),
               ),
