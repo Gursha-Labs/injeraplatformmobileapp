@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:injera/providers/auth/auth_state.dart';
 import 'package:injera/providers/auth_provider.dart';
 
 class VerificationScreen extends ConsumerStatefulWidget {

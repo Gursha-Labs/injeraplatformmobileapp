@@ -1,6 +1,7 @@
 // screens/auth/otp_verification_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:injera/providers/auth/auth_state.dart';
 import 'package:injera/providers/auth_provider.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {

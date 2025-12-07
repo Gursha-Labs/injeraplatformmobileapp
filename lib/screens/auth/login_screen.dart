@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:injera/providers/auth/auth_state.dart';
 import 'package:injera/providers/auth_provider.dart';
 import 'package:injera/screens/auth/forgot_password_screen.dart';
 import 'components/auth_button.dart';

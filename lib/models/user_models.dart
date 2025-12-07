@@ -93,6 +93,6 @@ class UserSettings {
   }
 }
 
-enum AppTheme { light, dark }
+enum AppTheme { light, dark, darkTheme }
 
 enum Privacy { public, private }
