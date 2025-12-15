@@ -10,7 +10,7 @@ class UploadService {
   UploadService()
     : _dio = Dio(
         BaseOptions(
-          baseUrl: 'http://192.168.137.1:8000/api',
+          baseUrl: 'http://192.168.137.86:8000/api',
           connectTimeout: const Duration(seconds: 60),
           receiveTimeout: const Duration(seconds: 60),
           headers: {'Accept': 'application/json'},

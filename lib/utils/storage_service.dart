@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
@@ -24,7 +23,7 @@ class StorageService {
     await _prefs.remove(_tokenKey);
   }
 
-  // User data methods
+  // User data
   Future<void> saveUserData(Map<String, dynamic> userData) async {
     await _prefs.setString(_userDataKey, json.encode(userData));
   }
@@ -47,16 +46,20 @@ class StorageService {
     return _prefs.getBool(_isLoggedInKey) ?? false;
   }
 
-  // Clear all auth data
   Future<void> clearAuthData() async {
     await removeToken();
     await removeUserData();
     await _prefs.remove(_isLoggedInKey);
   }
 
-  // Factory method for easier initialization
   static Future<StorageService> create() async {
     final prefs = await SharedPreferences.getInstance();
     return StorageService(prefs);
+  }
+
+  static StorageService? _instance;
+  static Future<StorageService> getInstance() async {
+    _instance ??= await create();
+    return _instance!;
   }
 }

@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:injera/models/ad_feed_response.dart';
 
 class ApiService {
-  static const String _baseUrl = 'http://192.168.137.1:8000/api';
+  static const String _baseUrl = 'http://192.168.137.86:8000/api';
 
   Future<AdFeedResponse> getAdsFeed({String? cursor}) async {
     try {
@@ -31,13 +31,11 @@ class ApiService {
     }
   }
 
-  // Add other API methods as needed
   Future<void> trackAdView(String adId) async {
     try {
       final url = Uri.parse('$_baseUrl/ads/$adId/view');
       await http.post(url);
     } catch (e) {
-      // Silent fail for view tracking
       print('Failed to track view: $e');
     }
   }

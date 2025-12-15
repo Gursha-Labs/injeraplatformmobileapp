@@ -1,9 +1,9 @@
-// providers/upload_provider.dart
 import 'dart:io';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:injera/api/config.dart';
 import '../models/ad_model.dart';
 
 class UploadState {
@@ -49,9 +49,9 @@ class UploadNotifier extends StateNotifier<UploadState> {
   UploadNotifier()
     : _dio = Dio(
         BaseOptions(
-          baseUrl: 'http://192.168.137.1:8000/api',
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 30),
+          baseUrl: ApiConfig.baseUrl,
+          connectTimeout: ApiConfig.connectTimeout,
+          receiveTimeout: ApiConfig.receiveTimeout,
           headers: {'Accept': 'application/json'},
         ),
       ),
@@ -68,7 +68,6 @@ class UploadNotifier extends StateNotifier<UploadState> {
       if (pickedFile != null) {
         final file = File(pickedFile.path);
 
-        // Check file size (max 100MB)
         final fileSize = await file.length();
         if (fileSize > 100 * 1024 * 1024) {
           throw Exception('Video file too large. Max 100MB.');
@@ -97,7 +96,6 @@ class UploadNotifier extends StateNotifier<UploadState> {
     required String authToken,
     List<String>? tags,
   }) async {
-    // Validate
     if (state.selectedVideo == null) {
       state = state.copyWith(error: 'Please select a video first');
       return;
@@ -130,16 +128,14 @@ class UploadNotifier extends StateNotifier<UploadState> {
         'file': multipartFile,
       });
 
-      // Add tags if provided
       if (tags != null && tags.isNotEmpty) {
         for (int i = 0; i < tags.length; i++) {
           formData.fields.add(MapEntry('tag_names[$i]', tags[i]));
         }
       }
 
-      // Upload with progress tracking
       final response = await _dio.post(
-        '/ads/upload',
+        ApiEndpoints.uploadAd,
         data: formData,
         options: Options(headers: {'Authorization': 'Bearer $authToken'}),
         onSendProgress: (sent, total) {

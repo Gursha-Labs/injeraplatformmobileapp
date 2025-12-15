@@ -22,6 +22,4 @@ class ApiClient {
       body: json.encode(body),
     );
   }
-
-  // You can add GET, PUT, DELETE methods here as needed
 }

@@ -1,12 +1,10 @@
 // services/category_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:injera/api/config.dart';
 import '../models/category_model.dart';
 
 class CategoryService {
-  static const String baseUrl = 'http://192.168.137.1:8000/api';
-  static const Duration timeout = Duration(seconds: 15);
-
   Future<List<Category>> fetchCategories({String? authToken}) async {
     try {
       Map<String, String> headers = {
@@ -20,8 +18,11 @@ class CategoryService {
       }
 
       final response = await http
-          .get(Uri.parse('$baseUrl/categories'), headers: headers)
-          .timeout(timeout);
+          .get(
+            Uri.parse('${ApiConfig.baseUrl}${ApiEndpoints.categories}'),
+            headers: headers,
+          )
+          .timeout(ApiConfig.timeout);
 
       print('Category API Status: ${response.statusCode}');
       print('Category API Response: ${response.body}');

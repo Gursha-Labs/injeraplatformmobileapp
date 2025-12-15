@@ -1,25 +1,64 @@
 import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:injera/models/ad_feed_response.dart';
-import '../models/ad_model.dart';
+import 'package:injera/api/config.dart';
+import 'package:injera/utils/storage_service.dart';
+
+import '../models/ad_video_model.dart';
+
+final adServiceProvider = Provider((ref) => AdService());
 
 class AdService {
-  static const String baseUrl = 'http://192.168.137.1:8000/api';
+  Future<String?> _getToken() async {
+    final storage = await StorageService.getInstance();
+    return storage.getToken();
+  }
 
-  Future<AdFeedResponse> getAdFeed({String? cursor}) async {
-    final url = Uri.parse(
-      '$baseUrl/ads/feed${cursor != null ? '?cursor=$cursor' : ''}',
+  Future<FeedResponse> fetchFeed({String? cursor}) async {
+    final token = await _getToken();
+    final endpoint = cursor != null
+        ? '${ApiConfig.baseUrl}/ads/feed?cursor=$cursor'
+        : '${ApiConfig.baseUrl}/ads/feed';
+
+    final response = await http.get(
+      Uri.parse(endpoint),
+      headers: token != null ? {'Authorization': 'Bearer $token'} : {},
     );
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
-        return AdFeedResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Failed to load ads: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to load ads: $e');
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load videos');
     }
+
+    final json = jsonDecode(response.body);
+    return FeedResponse.fromJson(json);
+  }
+
+  Future<void> trackView(String adId, int percentage) async {
+    final token = await _getToken();
+    if (token == null) return;
+
+    await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/ads/$adId/view'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'watched_percentage': percentage}),
+    );
+  }
+
+  Future<int> getPoints() async {
+    final token = await _getToken();
+    if (token == null) return 0;
+
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/user/points'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['points'] ?? 0;
+    }
+    return 0;
   }
 }
