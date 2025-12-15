@@ -1,5 +1,3 @@
-// providers/theme_provider.dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -36,7 +34,6 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         isDarkMode: themeIndex == 1,
       );
     } catch (e) {
-      // Default to dark theme on error
       state = const ThemeState(currentTheme: AppTheme.dark, isDarkMode: true);
     }
   }
@@ -51,7 +48,6 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
       isDarkMode: newTheme == AppTheme.dark,
     );
 
-    // Save to shared preferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_themeKey, newTheme.index);
   }
@@ -62,7 +58,6 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
       isDarkMode: theme == AppTheme.dark,
     );
 
-    // Save to shared preferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_themeKey, theme.index);
   }

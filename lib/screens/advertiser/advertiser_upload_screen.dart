@@ -12,7 +12,6 @@ import 'package:injera/upload/components/upload_error.dart';
 import 'package:injera/upload/components/upload_success.dart';
 import 'package:injera/upload/components/upload_button.dart';
 import 'package:injera/upload/upload_utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AdvertiserUploadScreen extends ConsumerStatefulWidget {
   const AdvertiserUploadScreen({super.key});
@@ -64,13 +63,7 @@ class _AdvertiserUploadScreenState
     return AppBar(
       backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
       elevation: 0,
-      leading: IconButton(
-        icon: Icon(
-          Icons.arrow_back,
-          color: isDark ? AppColors.iconDark : AppColors.iconLight,
-        ),
-        onPressed: () => Navigator.pop(context),
-      ),
+
       title: Text(
         'Upload Ad',
         style: TextStyle(

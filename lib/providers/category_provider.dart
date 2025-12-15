@@ -1,5 +1,3 @@
-// providers/category_provider.dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import '../services/category_service.dart';
 import '../models/category_model.dart';

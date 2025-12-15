@@ -77,6 +77,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
+
                 _performLogout();
               },
               child: Text('Logout', style: TextStyle(color: Colors.red)),
