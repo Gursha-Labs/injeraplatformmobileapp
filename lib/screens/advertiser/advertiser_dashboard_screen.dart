@@ -32,14 +32,7 @@ class AdvertiserDashboardScreen extends ConsumerWidget {
             backgroundColor: bgColor,
             elevation: 0,
             pinned: true,
-            title: Text(
-              'Dashboard',
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-              ),
-            ),
+
             actions: [
               IconButton(
                 icon: Container(

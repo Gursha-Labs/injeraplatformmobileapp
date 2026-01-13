@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:injera/models/ad_video_model.dart';
-import 'package:injera/providers/ad_feed_provider.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class VideoPlayerWidget extends ConsumerStatefulWidget {

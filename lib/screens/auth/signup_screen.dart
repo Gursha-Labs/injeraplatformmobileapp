@@ -165,9 +165,28 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               if (value == null || value.isEmpty) {
                 return 'Please enter a username';
               }
-              if (value.length < 3) {
+
+              final trimmedValue = value.trim();
+
+              // Username validation - same as login screen
+              if (trimmedValue.length < 3) {
                 return 'Username must be at least 3 characters';
               }
+
+              if (trimmedValue.length > 30) {
+                return 'Username must be less than 30 characters';
+              }
+              // NEW: Check that username contains at least one letter
+              final containsLetter = RegExp(r'[a-zA-Z]').hasMatch(trimmedValue);
+              if (!containsLetter) {
+                return 'Username must contain at least one letter (a-z, A-Z)';
+              }
+              // Check for special characters in username
+              final usernameRegex = RegExp(r'^[a-zA-Z0-9_.-]+$');
+              if (!usernameRegex.hasMatch(trimmedValue)) {
+                return 'Username can only contain letters, numbers, ., _, and -';
+              }
+
               return null;
             },
           ),
@@ -185,6 +204,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               if (value.length < 6) {
                 return 'Password must be at least 6 characters';
               }
+
+              // Client-side password validation
+              if (value.length > 50) {
+                return 'Password is too long';
+              }
+
+              // Check for spaces
+              if (value.contains(' ')) {
+                return 'Password cannot contain spaces';
+              }
+
               return null;
             },
           ),

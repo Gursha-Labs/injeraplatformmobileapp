@@ -8,6 +8,8 @@ class AuthTextField extends StatefulWidget {
   final bool isPassword;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
+  final Function(String)? onChanged;
+  final bool? enabled;
 
   const AuthTextField({
     super.key,
@@ -17,6 +19,8 @@ class AuthTextField extends StatefulWidget {
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
     this.validator,
+    this.onChanged,
+    this.enabled,
   });
 
   @override
