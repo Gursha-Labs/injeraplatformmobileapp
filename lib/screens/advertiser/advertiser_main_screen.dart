@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/screens/advertiser/advertiser_dashboard_screen.dart';
-import 'package:injera/screens/advertiser/advertiser_upload_screen.dart';
+
 import 'package:injera/screens/advertiser/advertiser_profile_screen.dart';
 import 'package:injera/screens/advertiser/advertiser_analytics_screen.dart';
+import 'package:injera/screens/advertiser/advertiser_upload_screen.dart';
 import 'package:injera/theme/app_colors.dart';
 import 'package:injera/providers/theme_provider.dart';
 

@@ -1,15 +1,24 @@
+// config/api_config.dart
 class ApiConfig {
-  static const String baseUrl = 'http://192.168.0.109:8000/api';
+  static const String baseUrl = 'http://192.168.137.106:8000/api';
 
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
   static const Duration timeout = Duration(seconds: 30);
+  //
 
+  // Existing endpoints
   static const String userProfile = '/profile/user';
   static const String deleteProfilePicture = '/profile/user/picture';
   static const String updatePoints = '/user/points';
 
-  static String getProfilePictureUrl(String? path) {
+  // New advertiser endpoints
+  static const String advertiserProfile = '/advertiser/profile';
+  static const String advertiserVideos = '/owen-videos';
+  static String advertiserVideoById(String id) => '/advertiser/video/$id';
+
+  // Helper method for URLs
+  static String getStorageUrl(String? path) {
     if (path == null || path.isEmpty) {
       return '';
     }
