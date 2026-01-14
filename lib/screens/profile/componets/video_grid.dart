@@ -1,60 +1,80 @@
-// screens/profile/components/video_grid.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/providers/theme_provider.dart';
 import 'package:injera/theme/app_colors.dart';
 
-class VideoGrid extends ConsumerWidget {
-  const VideoGrid({super.key});
+class ProfileVideoGrid extends ConsumerWidget {
+  final List<String> videos;
+
+  const ProfileVideoGrid({super.key, required this.videos});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = ref.watch(themeProvider).isDarkMode;
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(1),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 1,
-        mainAxisSpacing: 1,
-        childAspectRatio: 0.7,
-      ),
-      itemCount: 15,
-      itemBuilder: (context, index) {
-        return _buildVideoThumbnail(index, isDark);
-      },
-    );
-  }
-
-  Widget _buildVideoThumbnail(int index, bool isDark) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Container(
-          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-          child: Image.network(
-            'https://picsum.photos/200/300?random=$index',
-            fit: BoxFit.cover,
-          ),
-        ),
-        Positioned(
-          bottom: 8,
-          left: 8,
-          child: Row(
+    if (videos.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.play_arrow, color: AppColors.pureWhite, size: 14),
-              const SizedBox(width: 4),
+              Icon(
+                Icons.video_library_outlined,
+                size: 48,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+              ),
+              const SizedBox(height: 16),
               Text(
-                '${(index + 1) * 125}',
-                style: const TextStyle(
-                  color: AppColors.pureWhite,
-                  fontSize: 12,
+                'No videos yet',
+                style: TextStyle(
+                  color: isDark ? AppColors.pureWhite : AppColors.pureBlack,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Start creating content to see it here',
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                  fontSize: 14,
                 ),
               ),
             ],
           ),
         ),
-      ],
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 2,
+        mainAxisSpacing: 2,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: videos.length,
+      itemBuilder: (context, index) {
+        return Container(
+          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          child: Center(
+            child: Icon(
+              Icons.play_circle_outline_rounded,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+              size: 32,
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/providers/comment_provider.dart';
 import 'package:injera/widgets/comment_bottom_sheet.dart';
@@ -8,6 +9,7 @@ import 'package:injera/models/ad_video_model.dart';
 import 'package:injera/providers/ad_feed_provider.dart';
 import 'package:injera/providers/points_provider.dart';
 import 'package:injera/widgets/points_display_widget.dart';
+import 'package:share_plus/share_plus.dart'; // Add this import
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -29,10 +31,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final feedState = ref.read(adFeedProvider);
     _currentPage = feedState.currentIndex ?? 0;
 
-    // Preload videos around the saved position
     ref.read(adFeedProvider.notifier).preloadAround(_currentPage);
 
-    // Safely jump to saved page AFTER the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_hasJumpedToSavedPage && feedState.ads.isNotEmpty) {
         _pageController.jumpToPage(_currentPage);
@@ -43,6 +43,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
+    // Stop all video controllers when leaving the screen
+    final notifier = ref.read(adFeedProvider.notifier);
+    final feedState = ref.read(adFeedProvider);
+
+    for (final ad in feedState.ads) {
+      final controller = notifier.getController(ad.id);
+      controller?.pause();
+    }
+
     _pageController.dispose();
     super.dispose();
   }
@@ -196,7 +205,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// VideoPlayerCard (unchanged except fixed syntax error in didUpdateWidget)
 class VideoPlayerCard extends StatefulWidget {
   final AdVideo ad;
   final VideoPlayerController? controller;
@@ -264,9 +272,123 @@ class _VideoPlayerCardState extends State<VideoPlayerCard> {
     });
   }
 
+  // Share function with platform-specific options
+  Future<void> _shareVideo() async {
+    try {
+      // Create a shareable message with video details
+      final shareText =
+          '''
+Check out this video on Injera!
+
+"${widget.ad.title}"
+by @${widget.ad.advertiser.username}
+
+${widget.ad.tags.isNotEmpty ? 'Tags: ${widget.ad.tags.map((t) => '#${t.name}').join(' ')}' : ''}
+
+#Injera #WatchAndEarn
+''';
+
+      // Show a custom share dialog for better UX
+      await showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.black87,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) {
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    'Share Video',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Divider(color: Colors.grey[800]),
+                _buildShareOption(
+                  context,
+                  icon: Icons.content_copy,
+                  label: 'Copy Link',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Clipboard.setData(ClipboardData(text: widget.ad.videoUrl));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Link copied to clipboard'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  },
+                ),
+                _buildShareOption(
+                  context,
+                  icon: Icons.share,
+                  label: 'Share via...',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Share.share(
+                      shareText,
+                      subject: 'Check out this video on Injera!',
+                    );
+                  },
+                ),
+                // You can add more platform-specific options here
+                // For example, Instagram, WhatsApp, etc.
+                _buildShareOption(
+                  context,
+                  icon: Icons.chat_bubble_outline,
+                  label: 'Share to WhatsApp',
+                  onTap: () {
+                    Navigator.pop(context);
+                    final whatsappText = Uri.encodeFull(shareText);
+                    final whatsappUrl = 'whatsapp://send?text=$whatsappText';
+                    // You would need url_launcher package for this
+                    // launchUrl(Uri.parse(whatsappUrl));
+                    Share.share(shareText);
+                  },
+                ),
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 10),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      // Fallback to simple share if custom dialog fails
+      Share.share(
+        'Check out this video: "${widget.ad.title}" by @${widget.ad.advertiser.username}',
+        subject: 'Video from Injera',
+      );
+    }
+  }
+
+  Widget _buildShareOption(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white),
+      title: Text(label, style: TextStyle(color: Colors.white)),
+      onTap: onTap,
+    );
+  }
+
   @override
   void dispose() {
     _controlsTimer?.cancel();
+    // Ensure video is paused when this card is disposed
+    if (widget.controller?.value.isPlaying == true) {
+      widget.controller?.pause();
+    }
     super.dispose();
   }
 
@@ -319,18 +441,13 @@ class _VideoPlayerCardState extends State<VideoPlayerCard> {
               ),
             ),
 
-          // Side actions
+          // Side actions - REMOVED like button
           Positioned(
             right: 16,
             bottom: 120,
             child: Column(
               children: [
-                _buildActionButton(
-                  Icons.favorite_border,
-                  widget.ad.viewCount.toString(),
-                ),
-                const SizedBox(height: 20),
-                // In your VideoPlayerCard's build method, update the comment action button:
+                // Comment button (unchanged)
                 GestureDetector(
                   onTap: () {
                     showModalBottomSheet(
@@ -375,12 +492,16 @@ class _VideoPlayerCardState extends State<VideoPlayerCard> {
                 const SizedBox(height: 20),
                 _buildActionButton(Icons.bookmark_border, 'Save'),
                 const SizedBox(height: 20),
-                _buildActionButton(Icons.share_outlined, 'Share'),
+                // Updated Share button with onTap handler
+                GestureDetector(
+                  onTap: _shareVideo,
+                  child: _buildActionButton(Icons.share_outlined, 'Share'),
+                ),
               ],
             ),
           ),
 
-          // Bottom content
+          // Bottom content (unchanged)
           Positioned(
             left: 16,
             right: 100,

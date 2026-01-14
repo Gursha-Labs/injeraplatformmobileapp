@@ -7,3 +7,8 @@ class AuthEndpoints {
   static const String resendVerification = '/resend-verification';
   static const String resetPassword = '/reset-password';
 }
+
+// api/endpoints.dart
+class SearchEndpoints {
+  static const String searchAds = '/search-video/';
+}

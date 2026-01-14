@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/models/user_models.dart' hide AppTheme;
 import 'package:injera/providers/auth/auth_state.dart';
 import 'package:injera/screens/auth/login_screen.dart';
-import 'package:injera/screens/auth/otp_verification_screen.dart';
 import 'package:injera/providers/auth_provider.dart';
+import 'package:injera/screens/auth/verification_screen.dart';
 import 'package:injera/screens/main_app/main_screen.dart';
 import 'package:injera/screens/advertiser/advertiser_wrapper.dart';
 
@@ -28,14 +28,16 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    if (authState.status == AuthStatus.loading) {
-      return _buildLoadingScreen();
-    }
-
     return _buildContentBasedOnAuthState(authState);
   }
 
   Widget _buildContentBasedOnAuthState(AuthState authState) {
+    final next = authState.user?.email!;
+    // Show LoginScreen while checking auth status or if unauthenticated
+    if (authState.status == AuthStatus.loading) {
+      return LoginScreen(isCheckingAuthStatus: true);
+    }
+
     switch (authState.status) {
       case AuthStatus.authenticated:
         if (authState.user?.type == UserType.advertiser) {
@@ -44,21 +46,10 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
           return const MainScreen();
         }
       case AuthStatus.verificationRequired:
-        return const OtpVerificationScreen();
+        return VerificationScreen(email: next!);
       case AuthStatus.unauthenticated:
       default:
         return const LoginScreen();
     }
-  }
-
-  Widget _buildLoadingScreen() {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFE2C55)),
-        ),
-      ),
-    );
   }
 }

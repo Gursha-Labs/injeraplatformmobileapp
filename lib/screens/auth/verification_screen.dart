@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/providers/auth/auth_state.dart';
 import 'package:injera/providers/auth_provider.dart';
+import 'package:injera/theme/app_colors.dart';
+import 'package:injera/providers/theme_provider.dart';
 
 class VerificationScreen extends ConsumerStatefulWidget {
   final String email;
@@ -26,6 +28,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   void initState() {
     super.initState();
     _startCooldownTimer();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _otpFocusNode.requestFocus();
+    });
   }
 
   void _startCooldownTimer() {
@@ -55,7 +60,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('New OTP sent successfully!'),
-            backgroundColor: Colors.black,
+            backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -67,7 +72,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.error ?? 'Failed to send OTP'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -79,7 +84,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to resend OTP: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -100,21 +105,38 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final themeState = ref.watch(themeProvider);
+    final isDarkMode = themeState.isDarkMode;
     final screenWidth = MediaQuery.of(context).size.width;
 
+    // Theme colors
+    final backgroundColor = isDarkMode
+        ? AppColors.backgroundDark
+        : AppColors.backgroundLight;
+    final surfaceColor = isDarkMode
+        ? AppColors.surfaceDark
+        : AppColors.surfaceLight;
+    final textPrimaryColor = isDarkMode
+        ? AppColors.textPrimaryDark
+        : AppColors.textPrimaryLight;
+    final textSecondaryColor = isDarkMode
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondaryLight;
+    final borderColor = isDarkMode
+        ? AppColors.borderDark
+        : AppColors.borderLight;
+    final iconColor = isDarkMode ? AppColors.iconDark : AppColors.iconLight;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundColor,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
+        // Removed back button as requested
+        title: Text(
           'Verify Email',
           style: TextStyle(
-            color: Colors.black,
+            color: textPrimaryColor,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -132,12 +154,22 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 const SizedBox(height: 40),
 
                 // Header Section
-                _buildHeaderSection(),
+                _buildHeaderSection(
+                  textPrimaryColor: textPrimaryColor,
+                  textSecondaryColor: textSecondaryColor,
+                  iconColor: iconColor,
+                ),
 
                 const SizedBox(height: 48),
 
                 // OTP Input Section
-                _buildOtpInputSection(authState),
+                _buildOtpInputSection(
+                  authState,
+                  textPrimaryColor: textPrimaryColor,
+                  backgroundColor: backgroundColor,
+                  borderColor: borderColor,
+                  isDarkMode: isDarkMode,
+                ),
 
                 const SizedBox(height: 32),
 
@@ -147,7 +179,11 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 const SizedBox(height: 24),
 
                 // Resend OTP Section
-                _buildResendSection(),
+                _buildResendSection(
+                  textSecondaryColor: textSecondaryColor,
+                  textPrimaryColor: textPrimaryColor,
+                  isDarkMode: isDarkMode,
+                ),
               ],
             ),
           ),
@@ -156,30 +192,34 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     );
   }
 
-  Widget _buildHeaderSection() {
+  Widget _buildHeaderSection({
+    required Color textPrimaryColor,
+    required Color textSecondaryColor,
+    required Color iconColor,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.black12, width: 1.5),
+            color: AppColors.primary.withOpacity(0.1),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.mark_email_read_outlined,
-            color: Colors.black,
-            size: 24,
+            color: AppColors.primary,
+            size: 28,
           ),
         ),
 
         const SizedBox(height: 24),
 
-        const Text(
+        Text(
           'Email Verification',
           style: TextStyle(
-            color: Colors.black,
+            color: textPrimaryColor,
             fontSize: 28,
             fontWeight: FontWeight.w700,
             height: 1.2,
@@ -190,8 +230,8 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
         RichText(
           text: TextSpan(
-            style: const TextStyle(
-              color: Colors.black54,
+            style: TextStyle(
+              color: textSecondaryColor,
               fontSize: 16,
               height: 1.5,
             ),
@@ -199,8 +239,8 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               const TextSpan(text: 'We sent a verification code to '),
               TextSpan(
                 text: widget.email,
-                style: const TextStyle(
-                  color: Colors.black,
+                style: TextStyle(
+                  color: textPrimaryColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -214,14 +254,20 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     );
   }
 
-  Widget _buildOtpInputSection(AuthState authState) {
+  Widget _buildOtpInputSection(
+    AuthState authState, {
+    required Color textPrimaryColor,
+    required Color backgroundColor,
+    required Color borderColor,
+    required bool isDarkMode,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Verification Code',
           style: TextStyle(
-            color: Colors.black,
+            color: textPrimaryColor,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -232,15 +278,15 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         Container(
           height: 56,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDarkMode ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: authState.error != null ? Colors.black : Colors.black26,
+              color: authState.error != null ? AppColors.error : borderColor,
               width: authState.error != null ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -249,23 +295,31 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
           child: TextField(
             controller: _otpController,
             focusNode: _otpFocusNode,
-            style: const TextStyle(
-              color: Colors.black,
+            style: TextStyle(
+              color: textPrimaryColor,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               hintText: 'Enter 6-digit code',
               hintStyle: TextStyle(
-                color: Colors.black38,
+                color: textPrimaryColor.withOpacity(0.5),
                 fontWeight: FontWeight.w400,
               ),
             ),
             keyboardType: TextInputType.number,
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _verifyOtp(),
+            maxLength: 6,
+            buildCounter:
+                (
+                  context, {
+                  required currentLength,
+                  required isFocused,
+                  maxLength,
+                }) => null,
           ),
         ),
 
@@ -275,18 +329,18 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.03),
+              color: AppColors.error.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.black12),
+              border: Border.all(color: AppColors.error.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.black, size: 16),
+                Icon(Icons.error_outline, color: AppColors.error, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     authState.error!,
-                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                    style: TextStyle(color: AppColors.error, fontSize: 14),
                   ),
                 ),
               ],
@@ -304,13 +358,13 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       child: ElevatedButton(
         onPressed: authState.isLoading ? null : () => _verifyOtp(),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          disabledBackgroundColor: Colors.black38,
+          disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
         ),
         child: authState.isLoading
             ? const SizedBox(
@@ -321,47 +375,44 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Verify Email',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward, size: 18),
-                ],
+            : const Text(
+                'Verify Email',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
       ),
     );
   }
 
-  Widget _buildResendSection() {
+  Widget _buildResendSection({
+    required Color textSecondaryColor,
+    required Color textPrimaryColor,
+    required bool isDarkMode,
+  }) {
     return Column(
       children: [
-        const Divider(color: Colors.black12),
+        Divider(color: textSecondaryColor.withOpacity(0.2)),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               "Didn't receive the code? ",
-              style: TextStyle(color: Colors.black54, fontSize: 14),
+              style: TextStyle(color: textSecondaryColor, fontSize: 14),
             ),
             if (_isResending)
-              const SizedBox(
+              SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
               )
             else if (_resendCooldown > 0)
               Text(
                 'Resend in $_resendCooldown',
-                style: const TextStyle(
-                  color: Colors.black54,
+                style: TextStyle(
+                  color: textSecondaryColor,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -369,10 +420,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             else
               GestureDetector(
                 onTap: _resendOtp,
-                child: const Text(
+                child: Text(
                   'Resend Code',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: AppColors.primary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     decoration: TextDecoration.underline,
@@ -389,20 +440,45 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     // Hide keyboard
     FocusScope.of(context).unfocus();
 
-    final result = await ref
-        .read(authProvider.notifier)
-        .verifyOtp(_otpController.text);
-
-    if (result.success) {
-      Navigator.of(context).pop();
+    // Validate OTP length
+    final otp = _otpController.text.trim();
+    if (otp.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Email verified successfully!'),
-          backgroundColor: Colors.black,
+          content: const Text('Please enter the verification code'),
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
+      return;
+    }
+
+    if (otp.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter a valid 6-digit code'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+      return;
+    }
+
+    final result = await ref.read(authProvider.notifier).verifyOtp(otp);
+
+    if (result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Email verified successfully!'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+      // Navigate to appropriate screen after verification
+      // The navigation will be handled by AuthWrapper automatically
     }
   }
 }
