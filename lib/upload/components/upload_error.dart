@@ -1,6 +1,5 @@
 // upload/components/upload_error.dart
 import 'package:flutter/material.dart';
-import 'package:injera/theme/app_colors.dart';
 
 class UploadError extends StatelessWidget {
   final String error;
@@ -16,42 +15,64 @@ class UploadError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: isDark ? Colors.red[900]!.withOpacity(0.2) : Colors.red[50],
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: isDark ? Colors.red[800]! : Colors.red[200]!,
-          width: 0.5,
-        ),
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.black : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(20),
         child: Row(
           children: [
-            const Icon(Icons.error_outline, size: 16, color: Colors.red),
-            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                error,
-                style: TextStyle(
-                  color: isDark ? Colors.red[200] : Colors.red[800],
-                  fontSize: 12,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'UPLOAD ERROR',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    error,
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ),
             IconButton(
               onPressed: onClear,
-              icon: Icon(
-                Icons.close,
-                size: 14,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondaryLight,
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+              icon: Icon(Icons.close, color: Colors.black, size: 22),
             ),
           ],
         ),

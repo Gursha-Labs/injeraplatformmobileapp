@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injera/api/config.dart';
+import 'package:injera/models/advertiser_models.dart';
 import 'package:injera/models/user_profile.dart';
 import 'package:injera/utils/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +12,7 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  Dio? _dio; // Changed from 'late Dio _dio' to nullable
+  Dio? _dio;
   final String _baseUrl = ApiConfig.baseUrl;
   bool _isInitialized = false;
 
@@ -33,7 +34,12 @@ class ApiService {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
+        },
+        // Add this to handle different status codes
+        validateStatus: (status) {
+          return status! < 500; // Accept status codes less than 500
         },
       ),
     );
@@ -41,15 +47,25 @@ class ApiService {
     _dio!.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          // Get fresh token for each request
           final token = await _getToken();
-          if (token != null) {
+          if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
           debugPrint('Request: ${options.method} ${options.path}');
+          debugPrint('Headers: ${options.headers}');
           return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          debugPrint('Response status: ${response.statusCode}');
+          debugPrint('Response data: ${response.data}');
+          return handler.next(response);
         },
         onError: (error, handler) async {
           debugPrint('API Error: ${error.message}');
+          debugPrint('Error status: ${error.response?.statusCode}');
+          debugPrint('Error data: ${error.response?.data}');
+
           if (error.response?.statusCode == 401) {
             final refreshed = await _refreshToken();
             if (refreshed) {
@@ -68,7 +84,9 @@ class ApiService {
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
+    final token = prefs.getString('auth_token');
+    debugPrint('Current token from storage: ${token?.substring(0, 20)}...');
+    return token;
   }
 
   Future<bool> _refreshToken() async {
@@ -94,6 +112,151 @@ class ApiService {
     return false;
   }
 
+  Future<AdvertiserProfile> getAdvertiserProfile() async {
+    await _ensureInitialized();
+
+    try {
+      final response = await _dio!.get('/advertiser/profile');
+      debugPrint('Profile Response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        return AdvertiserProfile.fromJson(response.data);
+      } else if (response.statusCode == 404) {
+        // Handle 404 by returning default profile
+        debugPrint('Profile endpoint returned 404, using default profile');
+        return AdvertiserProfile(
+          userId: 'unknown',
+          username: 'Advertiser',
+          email: '',
+          totalAdsUploaded: 0,
+          totalAdViews: 0,
+          totalSpent: '0.00',
+          subscriptionActive: false,
+          isActive: true,
+        );
+      } else {
+        throw Exception(
+          'Failed to load advertiser profile: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      debugPrint('Get advertiser profile error: ${e.message}');
+
+      // Handle 404 error
+      if (e.response?.statusCode == 404) {
+        return AdvertiserProfile(
+          userId: 'unknown',
+          username: 'Advertiser',
+          email: '',
+          totalAdsUploaded: 0,
+          totalAdViews: 0,
+          totalSpent: '0.00',
+          subscriptionActive: false,
+          isActive: true,
+        );
+      }
+
+      rethrow;
+    }
+  }
+
+  Future<List<AdvertiserVideo>> getAdvertiserVideos({
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    await _ensureInitialized();
+
+    try {
+      final response = await _dio!.get(
+        ApiConfig.advertiserVideos,
+        queryParameters: {'page': page, 'per_page': perPage},
+      );
+
+      debugPrint('Videos Response: ${response.statusCode}');
+      debugPrint('Videos Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        // Check different possible response structures
+        if (response.data is List) {
+          // If response is directly a list
+          return (response.data as List)
+              .map((json) => AdvertiserVideo.fromJson(json))
+              .toList();
+        } else if (response.data['data'] != null) {
+          // If response has 'data' key (pagination)
+          final data = response.data['data'] as List?;
+          if (data != null) {
+            return data.map((json) => AdvertiserVideo.fromJson(json)).toList();
+          }
+        } else if (response.data is Map<String, dynamic>) {
+          // Try to parse the map directly
+          return [AdvertiserVideo.fromJson(response.data)];
+        }
+        return [];
+      } else if (response.statusCode == 500) {
+        debugPrint('Server error 500, returning empty list');
+        return [];
+      } else {
+        debugPrint('Unexpected status code: ${response.statusCode}');
+        return [];
+      }
+    } on DioException catch (e) {
+      debugPrint('Get advertiser videos error: ${e.message}');
+      debugPrint('Error status: ${e.response?.statusCode}');
+      debugPrint('Error data: ${e.response?.data}');
+
+      // Return empty list on error
+      return [];
+    }
+  }
+
+  // Get single video by ID
+  Future<AdvertiserVideo> getVideoById(String id) async {
+    await _ensureInitialized();
+
+    try {
+      final response = await _dio!.get(ApiConfig.advertiserVideoById(id));
+      debugPrint('Video by ID Response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        return AdvertiserVideo.fromJson(response.data);
+      } else if (response.statusCode == 404) {
+        throw Exception('Video not found');
+      } else {
+        throw Exception('Failed to load video: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      debugPrint('Get video by ID error: ${e.message}');
+      rethrow;
+    }
+  }
+
+  // Add a method to test API connectivity and authentication
+  Future<void> testApiConnection() async {
+    await _ensureInitialized();
+
+    try {
+      // Test basic API connectivity
+      final response = await _dio!.get('/');
+      debugPrint('API Root Status: ${response.statusCode}');
+
+      // Test auth token
+      final token = await _getToken();
+      debugPrint('Auth Token exists: ${token != null && token.isNotEmpty}');
+      if (token != null) {
+        debugPrint('Token length: ${token.length}');
+        debugPrint(
+          'Token first 20 chars: ${token.substring(0, min(20, token.length))}...',
+        );
+      }
+    } catch (e) {
+      debugPrint('API Connection test failed: $e');
+    }
+  }
+
+  // Helper function
+  int min(int a, int b) => a < b ? a : b;
+
   Future<UserProfile> getUserProfile() async {
     await _ensureInitialized();
 
@@ -108,12 +271,9 @@ class ApiService {
         }
       }
 
-      // If no profile returned, create a default one
       return await _createDefaultProfile();
     } on DioException catch (e) {
       debugPrint('Get profile error: ${e.message}');
-
-      // For any error, return a default profile
       return await _createDefaultProfile();
     }
   }

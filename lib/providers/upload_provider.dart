@@ -1,5 +1,6 @@
+// Update your UploadNotifier class with product variant support
+import 'dart:convert';
 import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +14,10 @@ class UploadState {
   final double uploadProgress;
   final File? selectedVideo;
   final String? selectedVideoName;
+  final List<File> selectedImages;
+  final bool isOrderable;
+  final double? price;
+  final String? location;
 
   const UploadState({
     this.isLoading = false,
@@ -21,6 +26,10 @@ class UploadState {
     this.uploadProgress = 0,
     this.selectedVideo,
     this.selectedVideoName,
+    this.selectedImages = const [],
+    this.isOrderable = false,
+    this.price,
+    this.location,
   });
 
   UploadState copyWith({
@@ -30,6 +39,10 @@ class UploadState {
     double? uploadProgress,
     File? selectedVideo,
     String? selectedVideoName,
+    List<File>? selectedImages,
+    bool? isOrderable,
+    double? price,
+    String? location,
   }) {
     return UploadState(
       isLoading: isLoading ?? this.isLoading,
@@ -38,6 +51,10 @@ class UploadState {
       uploadProgress: uploadProgress ?? this.uploadProgress,
       selectedVideo: selectedVideo ?? this.selectedVideo,
       selectedVideoName: selectedVideoName ?? this.selectedVideoName,
+      selectedImages: selectedImages ?? this.selectedImages,
+      isOrderable: isOrderable ?? this.isOrderable,
+      price: price ?? this.price,
+      location: location ?? this.location,
     );
   }
 }
@@ -84,6 +101,59 @@ class UploadNotifier extends StateNotifier<UploadState> {
     }
   }
 
+  Future<void> pickImages() async {
+    try {
+      final List<XFile> pickedFiles = await _picker.pickMultiImage(
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (pickedFiles.isNotEmpty) {
+        final images = pickedFiles.map((xFile) => File(xFile.path)).toList();
+        final totalSize = images.fold<int>(
+          0,
+          (sum, file) => sum + file.lengthSync(),
+        );
+
+        if (totalSize > 25 * 1024 * 1024) {
+          throw Exception('Total images size too large. Max 25MB.');
+        }
+
+        // Check if we exceed 10 images
+        final newImages = [...state.selectedImages, ...images];
+        if (newImages.length > 10) {
+          throw Exception(
+            'Maximum 10 images allowed. You have ${newImages.length}.',
+          );
+        }
+
+        state = state.copyWith(selectedImages: newImages, error: null);
+      }
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to pick images: ${e.toString()}');
+    }
+  }
+
+  void removeImage(int index) {
+    final newImages = List<File>.from(state.selectedImages);
+    newImages.removeAt(index);
+    state = state.copyWith(selectedImages: newImages);
+  }
+
+  void toggleOrderable(bool value) {
+    state = state.copyWith(isOrderable: value);
+  }
+
+  void updatePrice(String value) {
+    final price = double.tryParse(value);
+    state = state.copyWith(price: price);
+  }
+
+  void updateLocation(String value) {
+    state = state.copyWith(location: value);
+  }
+
   String _getFileName(String path) {
     final name = path.split('/').last;
     return name.length > 30 ? '${name.substring(0, 27)}...' : name;
@@ -111,11 +181,28 @@ class UploadNotifier extends StateNotifier<UploadState> {
       return;
     }
 
+    if (state.isOrderable) {
+      if (state.price == null || state.price! <= 0) {
+        state = state.copyWith(error: 'Please enter a valid price');
+        return;
+      }
+      if (state.location == null || state.location!.trim().isEmpty) {
+        state = state.copyWith(error: 'Please enter location');
+        return;
+      }
+      if (state.selectedImages.isEmpty) {
+        state = state.copyWith(
+          error: 'Please select at least one product image',
+        );
+        return;
+      }
+    }
+
     state = state.copyWith(isLoading: true, error: null, uploadProgress: 0);
 
     try {
-      // Prepare multipart file
-      final multipartFile = await MultipartFile.fromFile(
+      // Prepare video multipart file
+      final videoFile = await MultipartFile.fromFile(
         state.selectedVideo!.path,
         filename: 'video_${DateTime.now().millisecondsSinceEpoch}.mp4',
       );
@@ -125,9 +212,28 @@ class UploadNotifier extends StateNotifier<UploadState> {
         'title': title.trim(),
         'description': description.trim(),
         'category_id': categoryId,
-        'file': multipartFile,
+        'is_orderable': state.isOrderable ? 1 : 0,
+        'file': videoFile,
       });
 
+      // Add product variant data if orderable
+      if (state.isOrderable) {
+        formData.fields.addAll([
+          MapEntry('price', state.price!.toString()),
+          MapEntry('location', state.location!.trim()),
+        ]);
+
+        // Add product images - IMPORTANT: use 'image[]' field name as per backend
+        for (int i = 0; i < state.selectedImages.length; i++) {
+          final imageFile = await MultipartFile.fromFile(
+            state.selectedImages[i].path,
+            filename: 'product_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
+          );
+          formData.files.add(MapEntry('image[$i]', imageFile));
+        }
+      }
+
+      // Add tags
       if (tags != null && tags.isNotEmpty) {
         for (int i = 0; i < tags.length; i++) {
           formData.fields.add(MapEntry('tag_names[$i]', tags[i]));
@@ -149,25 +255,26 @@ class UploadNotifier extends StateNotifier<UploadState> {
       if (response.statusCode == 201 || response.statusCode == 200) {
         final adData = response.data['ad'];
 
-        // Create a properly formatted JSON for your AdVideo model
         final formattedJson = {
           'id': adData['id'],
           'title': adData['title'],
           'video_url': adData['video_url'],
           'advertiser_id': adData['advertiser_id'],
           'category_id': adData['category_id'],
-          'view_count': 0, // API doesn't return this, so use default
-          'comment_count': 0, // API doesn't return this, so use default
+          'view_count': 0,
+          'comment_count': 0,
           'duration': adData['duration'],
+          'is_orderable': adData['is_orderable'] ?? false,
           'created_at': adData['created_at'],
           'advertiser': {
             'id': adData['advertiser_id'],
-            'username': 'You', // Default since API doesn't provide
+            'username': 'You',
             'profile_picture': null,
           },
           'category': adData['category'],
-          'tags': adData['tags'],
-          'comments': [], // API doesn't return comments, so use empty list
+          'tags': adData['tags'] ?? [],
+          'comments': [],
+          'product_variant': adData['product_variant'],
         };
 
         final uploadedAd = AdVideo.fromJson(formattedJson);

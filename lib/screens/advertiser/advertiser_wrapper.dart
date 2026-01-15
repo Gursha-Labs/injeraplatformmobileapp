@@ -19,7 +19,7 @@ class AdvertiserWrapper extends ConsumerWidget {
     final themeState = ref.watch(themeProvider);
 
     return MaterialApp(
-      title: 'Injera Advertiser',
+      title: 'Injera',
       theme: themeState.isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
       home: const _AdvertiserHomePage(),
@@ -489,50 +489,68 @@ class _AdvertiserHomePage extends ConsumerWidget {
           ),
         ),
       ),
-      appBar: AppBar(
-        title: Text(
-          'Injera Platform',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: isDarkMode
-                ? AppColors.textPrimaryDark
-                : AppColors.textPrimaryLight,
-          ),
-        ),
-        backgroundColor: isDarkMode
-            ? AppColors.backgroundDark
-            : AppColors.backgroundLight,
-        elevation: 0,
-        leading: Builder(
-          builder: (context) {
-            return IconButton(
-              icon: _buildHamburgerMenuIcon(isDarkMode),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-              tooltip: 'Open Menu',
-            );
-          },
-        ),
-        iconTheme: IconThemeData(
-          color: isDarkMode ? AppColors.iconDark : AppColors.iconLight,
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            child: IconButton(
-              icon: Icon(
-                Icons.notifications_none_rounded,
-                size: 24,
-                color: isDarkMode ? AppColors.iconDark : AppColors.iconLight,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: false,
+              pinned: true,
+              backgroundColor: isDarkMode
+                  ? AppColors.backgroundDark
+                  : AppColors.backgroundLight,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              leading: Builder(
+                builder: (context) {
+                  return IconButton(
+                    icon: _buildHamburgerMenuIcon(isDarkMode),
+                    onPressed: () {
+                      Scaffold.of(context).openDrawer();
+                    },
+                    tooltip: 'Open Menu',
+                  );
+                },
               ),
-              onPressed: () {},
+              title: Center(
+                child: Text(
+                  'Injera',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: isDarkMode
+                        ? AppColors.pureWhite
+                        : AppColors.pureBlack,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              centerTitle: true,
+              actions: [
+                // Dark mode toggle icon
+                Consumer(
+                  builder: (context, ref, child) {
+                    final isDark = ref.watch(themeProvider).isDarkMode;
+                    return IconButton(
+                      icon: Icon(
+                        isDark ? Icons.light_mode : Icons.dark_mode,
+                        size: 24,
+                        color: isDarkMode
+                            ? AppColors.pureWhite
+                            : AppColors.pureBlack,
+                      ),
+                      onPressed: () {
+                        ref.read(themeProvider.notifier).toggleTheme();
+                      },
+                    );
+                  },
+                ),
+              ],
             ),
-          ),
-        ],
+          ];
+        },
+        body: const AdvertiserMainScreen(),
       ),
-      body: const AdvertiserMainScreen(),
     );
   }
 
@@ -545,19 +563,19 @@ class _AdvertiserHomePage extends ConsumerWidget {
           Container(
             height: 2,
             width: 20,
-            color: isDarkMode ? AppColors.iconDark : AppColors.iconLight,
+            color: isDarkMode ? AppColors.pureWhite : AppColors.pureBlack,
           ),
           const SizedBox(height: 4),
           Container(
             height: 2,
             width: 20,
-            color: isDarkMode ? AppColors.iconDark : AppColors.iconLight,
+            color: isDarkMode ? AppColors.pureWhite : AppColors.pureBlack,
           ),
           const SizedBox(height: 4),
           Container(
             height: 2,
             width: 20,
-            color: isDarkMode ? AppColors.iconDark : AppColors.iconLight,
+            color: isDarkMode ? AppColors.pureWhite : AppColors.pureBlack,
           ),
         ],
       ),

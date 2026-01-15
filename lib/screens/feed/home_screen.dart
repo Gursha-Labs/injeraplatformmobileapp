@@ -233,9 +233,27 @@ class _VideoPlayerCardState extends State<VideoPlayerCard> {
 
   void _ensureControllerReady() {
     if (widget.controller != null && !widget.controller!.value.isInitialized) {
-      widget.controller!.initialize().then((_) {
-        if (mounted) setState(() {});
-      });
+      // ADD THIS DEBUG PRINT
+      print('🎬 VideoPlayerCard - Loading video for: ${widget.ad.title}');
+      print('🎬 Video URL: ${widget.ad.videoUrl}');
+      print('🎬 Controller: ${widget.controller}');
+
+      widget.controller!
+          .initialize()
+          .then((_) {
+            print(
+              '✅ VideoPlayerCard - Successfully initialized: ${widget.ad.title}',
+            );
+            if (mounted) setState(() {});
+          })
+          .catchError((error, stackTrace) {
+            print(
+              '❌ VideoPlayerCard - Failed to initialize: ${widget.ad.title}',
+            );
+            print('❌ Error: $error');
+            print('❌ StackTrace: $stackTrace');
+            print('❌ URL that failed: ${widget.ad.videoUrl}');
+          });
     }
   }
 
