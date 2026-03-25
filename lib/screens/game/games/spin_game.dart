@@ -28,7 +28,6 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
   double _currentAngle = 0;
   bool _isSpinning = false;
   bool _isLoading = true;
-  bool _hasInsufficientPoints = false;
 
   int _userPoints = 0;
   double _betAmount = 0;
@@ -47,12 +46,12 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5),
+      duration: const Duration(seconds: 4),
     );
 
     _animation = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeOutExpo,
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -64,31 +63,77 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
       final gameVariables = await _spinService.getGameVariables();
       final rewardsList = await _spinService.getRewards();
 
-      // Filter only active rewards and sort by probability
+      // Filter only active rewards
       final activeRewards = rewardsList.where((r) => r.isActive).toList();
 
       // Prepare wheel segments from rewards
-      _rewards = activeRewards.map((r) => r.name).toList();
-      _rewardColors = activeRewards
-          .map((r) => _getRewardColor(r.type))
-          .toList();
+      if (activeRewards.isNotEmpty) {
+        _rewards = activeRewards.map((r) => r.name).toList();
+        _rewardColors = activeRewards
+            .map((r) => _getRewardColor(r.type))
+            .toList();
+      } else {
+        // Fallback if no active rewards
+        _rewards = [
+          "\$30",
+          "\$10",
+          "\$250",
+          "\$20",
+          "LOSE",
+          "\$5",
+          "\$500",
+          "\$80",
+        ];
+        _rewardColors = [
+          Colors.orange,
+          Colors.red,
+          Colors.blue,
+          Colors.green,
+          Colors.grey,
+          Colors.purple,
+          Colors.teal,
+          Colors.amber,
+        ];
+      }
 
       _betAmount = gameVariables.betPoint;
 
       // Get user points
       _userPoints = await _spinService.getUserPoints();
       ref.read(userPointsProvider.notifier).state = _userPoints;
-
-      // Check if user has enough points
-      _hasInsufficientPoints = _userPoints < _betAmount;
-
-      if (_hasInsufficientPoints) {
-        _showInsufficientPointsDialog();
-      }
     } catch (e) {
+      print('Error initializing game: $e');
+      // Fallback to default values
+      _rewards = [
+        "\$30",
+        "\$10",
+        "\$250",
+        "\$20",
+        "LOSE",
+        "\$5",
+        "\$500",
+        "\$80",
+      ];
+      _rewardColors = [
+        Colors.orange,
+        Colors.red,
+        Colors.blue,
+        Colors.green,
+        Colors.grey,
+        Colors.purple,
+        Colors.teal,
+        Colors.amber,
+      ];
+      _betAmount = 1.0;
+      _userPoints = 0;
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error initializing game: ${e.toString()}')),
+          SnackBar(
+            content: Text('Using default values: ${e.toString()}'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
         );
       }
     } finally {
@@ -113,43 +158,18 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
     }
   }
 
-  void _showInsufficientPointsDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: const Text('Insufficient Points'),
-        content: Text(
-          'You need $_betAmount points to play. You have $_userPoints points.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navigate to earn points screen
-              // Navigator.pushNamed(context, '/earn-points');
-            },
-            child: const Text('Earn Points'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> spinWheel() async {
-    if (_isSpinning || _hasInsufficientPoints) return;
+    if (_isSpinning) return;
 
-    setState(() => _isSpinning = true);
+    setState(() {
+      _isSpinning = true;
+    });
 
     try {
       // Call backend spin API
       final spinResponse = await _spinService.spin();
 
-      // Update user points in UI
+      // Update user points immediately in UI
       setState(() {
         _userPoints = spinResponse.userPoints;
         ref.read(userPointsProvider.notifier).state = _userPoints;
@@ -158,19 +178,28 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
       // Animate wheel to the correct segment
       await _animateToSegment(spinResponse.segmentIndex);
 
-      // Show result dialog
-      _showResultDialog(spinResponse);
+      // Show result dialog after animation completes
+      await _showResultDialog(spinResponse);
     } catch (e) {
+      print('Error during spin: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
-      setState(() => _isSpinning = false);
+      setState(() {
+        _isSpinning = false;
+      });
     }
   }
 
   Future<void> _animateToSegment(int targetIndex) async {
+    if (_rewards.isEmpty) return;
+
     if (targetIndex < 0 || targetIndex >= _rewards.length) {
       targetIndex = 0;
     }
@@ -186,8 +215,8 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
     const double pointerAngle = 3 * pi / 2;
     double rotationNeeded = (pointerAngle - currentTargetCenter) % (2 * pi);
 
-    // Add extra rotations for visual effect
-    int extraRotations = 8;
+    // Add extra rotations for visual effect (multiple full spins)
+    int extraRotations = 6;
     double targetAngle =
         _currentAngle + rotationNeeded + (extraRotations * 2 * pi);
 
@@ -199,11 +228,9 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
     _animation.addListener(_updateAngle);
     _animation.addStatusListener(_onAnimationComplete);
 
+    _targetAngle = targetAngle;
     _controller.reset();
     await _controller.forward();
-
-    // Store target for verification
-    _targetAngle = targetAngle;
   }
 
   void _updateAngle() {
@@ -214,14 +241,18 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
 
   void _onAnimationComplete(AnimationStatus status) {
     if (status == AnimationStatus.completed) {
-      setState(() => _isSpinning = false);
       _animation.removeListener(_updateAngle);
       _animation.removeStatusListener(_onAnimationComplete);
     }
   }
 
-  void _showResultDialog(SpinResponse response) {
-    showDialog(
+  Future<void> _showResultDialog(SpinResponse response) async {
+    // Wait a moment for the wheel to settle
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    if (!mounted) return;
+
+    return showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
@@ -238,6 +269,7 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
             const SizedBox(width: 10),
             Text(
               response.isWinner ? '🎉 You Won!' : '😢 Better Luck Next Time',
+              style: const TextStyle(fontSize: 20),
             ),
           ],
         ),
@@ -264,7 +296,7 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 14),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 15),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -292,16 +324,22 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Check if points are still sufficient for another spin
-              if (_userPoints < _betAmount) {
-                _showInsufficientPointsDialog();
-              }
+              setState(() {
+                _isSpinning = false;
+              });
             },
-            child: const Text('Continue'),
+            child: const Text('Continue', style: TextStyle(fontSize: 16)),
           ),
         ],
       ),
-    );
+    ).then((_) {
+      // Reset spinning state after dialog is closed
+      if (mounted) {
+        setState(() {
+          _isSpinning = false;
+        });
+      }
+    });
   }
 
   String _formatRewardValue(String type, double value) {
@@ -350,6 +388,7 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
               ],
@@ -361,90 +400,66 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (_hasInsufficientPoints)
-              Container(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning, color: Colors.red),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Insufficient points! Need $_betAmount points to play.',
-                        style: const TextStyle(color: Colors.red),
+            // Wheel Container
+            Container(
+              width: wheelSize,
+              height: wheelSize,
+              margin: const EdgeInsets.all(20),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  /// WHEEL
+                  Transform.rotate(
+                    angle: _currentAngle,
+                    child: Container(
+                      width: wheelSize,
+                      height: wheelSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(.3),
+                            blurRadius: 25,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: CustomPaint(
+                        painter: WheelPainter(_rewards, _rewardColors),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                /// WHEEL
-                Transform.rotate(
-                  angle: _currentAngle,
-                  child: Container(
-                    width: wheelSize,
-                    height: wheelSize,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(.3),
-                          blurRadius: 25,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: CustomPaint(
-                      painter: WheelPainter(_rewards, _rewardColors),
+                  /// CENTER BUTTON
+                  GestureDetector(
+                    onTap: _isSpinning ? null : spinWheel,
+                    child: Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isSpinning ? Colors.grey : Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(.2),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        _isSpinning ? Icons.hourglass_empty : Icons.play_arrow,
+                        color: _isSpinning
+                            ? Colors.grey.shade600
+                            : Colors.amber,
+                        size: 40,
+                      ),
                     ),
                   ),
-                ),
 
-                /// CENTER BUTTON
-                GestureDetector(
-                  onTap: _hasInsufficientPoints ? null : spinWheel,
-                  child: Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _hasInsufficientPoints
-                          ? Colors.grey
-                          : Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(.2),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.play_arrow,
-                      color: _hasInsufficientPoints
-                          ? Colors.grey.shade600
-                          : Colors.amber,
-                      size: 40,
-                    ),
-                  ),
-                ),
-
-                /// POINTER
-                Positioned(
-                  top: -8,
-                  child: Container(
+                  /// POINTER
+                  Positioned(
+                    top: -8,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
@@ -482,33 +497,28 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
                       ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
             /// SPIN BUTTON
             ElevatedButton(
-              onPressed: (_isSpinning || _hasInsufficientPoints)
-                  ? null
-                  : spinWheel,
+              onPressed: _isSpinning ? null : spinWheel,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(220, 60),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
-                backgroundColor: (_isSpinning || _hasInsufficientPoints)
-                    ? Colors.grey
-                    : Colors.white,
+                backgroundColor: _isSpinning ? Colors.grey : Colors.white,
                 foregroundColor: Colors.white,
+                elevation: 5,
               ),
               child: Text(
                 _isSpinning
                     ? "SPINNING..."
-                    : (_hasInsufficientPoints
-                          ? "INSUFFICIENT POINTS"
-                          : "SPIN NOW (${_betAmount.toInt()} pts)"),
+                    : "SPIN NOW (${_betAmount.toInt()} pts)",
                 style: const TextStyle(
                   color: Colors.black,
                   fontSize: 18,
@@ -517,7 +527,7 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // Show bet amount info
             Text(
@@ -531,8 +541,6 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
   }
 }
 
-// (Removed unused extension _AnimationTarget)
-
 // Wheel Painter class
 class WheelPainter extends CustomPainter {
   final List<String> rewards;
@@ -542,6 +550,8 @@ class WheelPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (rewards.isEmpty) return;
+
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     final sweepAngle = 2 * pi / rewards.length;

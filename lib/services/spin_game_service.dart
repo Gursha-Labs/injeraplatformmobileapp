@@ -42,7 +42,8 @@ class SpinGameService {
     }
   }
 
-  // Get game variables (bet points, etc.)
+  // In spin_game_service.dart, update getGameVariables method:
+  // In spin_game_service.dart, update getGameVariables method:
   Future<GameVariables> getGameVariables() async {
     try {
       final headers = await _getHeaders();
@@ -53,10 +54,25 @@ class SpinGameService {
           )
           .timeout(ApiConfig.timeout);
 
+      print('Game Variables Response: ${response.body}');
+
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+        print('Variables data: $data');
+
         if (data.isNotEmpty) {
-          return GameVariables.fromJson(data.first);
+          // Find the variable with type 'bet_point'
+          final betPointVariable = data.firstWhere(
+            (variable) => variable['type'] == 'bet_point',
+            orElse: () => null,
+          );
+
+          if (betPointVariable != null) {
+            print('Found bet_point variable: $betPointVariable');
+            return GameVariables.fromJson(betPointVariable);
+          } else {
+            throw Exception('No bet_point variable found');
+          }
         }
         throw Exception('No game variables found');
       } else {
@@ -65,6 +81,7 @@ class SpinGameService {
         );
       }
     } catch (e) {
+      print('Error fetching game variables: $e');
       throw Exception('Error fetching game variables: $e');
     }
   }
@@ -79,7 +96,7 @@ class SpinGameService {
             headers: headers,
             body: json.encode({
               'game_id':
-                  'spin-wheel', // or the actual game ID from your backend
+                  '61e912db-3de5-40d8-b1dd-0c96bbf3eee6', // or the actual game ID from your backend
             }),
           )
           .timeout(ApiConfig.timeout);
