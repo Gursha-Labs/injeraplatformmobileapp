@@ -1,8 +1,6 @@
 // providers/advertiser_profile_provider.dart
 import 'dart:io';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:injera/models/advertiser_profile.dart';
 import 'package:injera/services/advertiser_profile_service.dart';

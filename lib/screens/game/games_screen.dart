@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/providers/theme_provider.dart';
 import 'package:injera/screens/game/components/game_card.dart';
+import 'package:injera/screens/game/games/SlotGameApp.dart';
 import 'package:injera/screens/game/games/color_match_game.dart';
-import 'package:injera/screens/game/games/match_game.dart';
+
 import 'package:injera/screens/game/games/quiz_game.dart';
 import 'package:injera/screens/game/games/spin_game.dart';
 import 'package:injera/screens/game/games/tap_game.dart';
@@ -79,7 +80,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
       case 'match':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const MatchGameScreen()),
+          MaterialPageRoute(builder: (context) => const SlotGameApp()),
         );
         break;
       case 'tap':
@@ -96,7 +97,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
     final isDark = ref.watch(themeProvider).isDarkMode;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.pureBlack : AppColors.pureWhite,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.pureWhite,
       appBar: AppBar(
         backgroundColor: isDark ? AppColors.pureBlack : AppColors.pureWhite,
         elevation: 0,

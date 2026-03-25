@@ -138,10 +138,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 return 'Please enter your email or username';
               }
 
-              // If it looks like an email (contains @), validate email format
               final trimmedValue = value.trim();
               if (trimmedValue.contains('@')) {
-                // First check for spaces
                 if (trimmedValue.contains(' ')) {
                   return 'Email cannot contain spaces';
                 }
@@ -238,7 +236,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 return 'Please enter your password';
               }
 
-              // Client-side password validation
               if (value.length < 6) {
                 return 'Password must be at least 6 characters';
               }

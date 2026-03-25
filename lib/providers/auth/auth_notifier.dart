@@ -174,7 +174,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void clearError() {
     state = state.copyWith(
       error: null,
-      // Optionally keep other state values
+
       status: state.status,
       user: state.user,
       message: state.message,

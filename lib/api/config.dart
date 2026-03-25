@@ -1,6 +1,6 @@
 // config/api_config.dart
 class ApiConfig {
-  static const String baseUrl = 'http://192.168.137.106:8000/api';
+  static const String baseUrl = 'http://192.168.137.1:8000/api';
 
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
@@ -16,6 +16,11 @@ class ApiConfig {
   static const String advertiserProfile = '/advertiser/profile';
   static const String advertiserVideos = '/owen-videos';
   static String advertiserVideoById(String id) => '/advertiser/video/$id';
+
+  static const String spinWheel = '/spin-wheel/spin';
+  static const String rewards = '/reward';
+  static String rewardById(String id) => '/reward/$id';
+  static const String gameVariables = '/variables';
 
   // Helper method for URLs
   static String getStorageUrl(String? path) {

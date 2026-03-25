@@ -1,5 +1,5 @@
 // models/advertiser_profile.dart
-import 'package:flutter/foundation.dart';
+
 import 'package:injera/utils/debug_util.dart';
 
 class AdvertiserProfile {

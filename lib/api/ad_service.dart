@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:injera/models/Comment.dart';
-import 'package:injera/models/ad_video_model.dart' hide Comment;
+import 'package:injera/models/ad_video_model.dart';
 import 'package:injera/api/config.dart';
 
 import 'package:injera/utils/storage_service.dart';
@@ -159,9 +159,6 @@ class AdService {
         throw Exception('User not authenticated');
       }
 
-      print('Sending reply to: ${uri.toString()}'); // Debug log
-      print('Reply data: $reply'); // Debug log
-
       final response = await http
           .post(
             uri,
@@ -174,9 +171,6 @@ class AdService {
           )
           .timeout(const Duration(seconds: 10));
 
-      print('Reply response status: ${response.statusCode}'); // Debug log
-      print('Reply response body: ${response.body}'); // Debug log
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
         return AddReplyResponse.fromJson(data);
@@ -186,7 +180,6 @@ class AdService {
         );
       }
     } catch (e) {
-      print('Reply error: $e'); // Debug log
       throw Exception('Failed to add reply: $e');
     }
   }

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/providers/category_provider.dart';
 import 'package:injera/providers/theme_provider.dart';
 import 'package:injera/providers/upload_provider.dart';
-import 'package:injera/theme/app_colors.dart';
 import 'package:injera/upload/components/upload_progress.dart';
 import 'package:injera/upload/components/upload_stats.dart';
 import 'package:injera/upload/components/upload_error.dart';
