@@ -1,9 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:injera/api/config.dart';
 import 'package:injera/api/api_client.dart';
 import 'package:injera/models/ad_video_model.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchService {

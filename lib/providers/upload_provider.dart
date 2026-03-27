@@ -1,5 +1,5 @@
 // Update your UploadNotifier class with product variant support
-import 'dart:convert';
+
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/legacy.dart';

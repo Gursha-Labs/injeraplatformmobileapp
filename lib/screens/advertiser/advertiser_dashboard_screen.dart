@@ -12,7 +12,7 @@ import '../../theme/app_colors.dart';
 import 'package:injera/providers/auth/auth_state.dart';
 import '../../models/advertiser_models.dart';
 
-import '../../widgets/video_player_widget.dart';
+
 
 class AdvertiserDashboardScreen extends ConsumerStatefulWidget {
   const AdvertiserDashboardScreen({super.key});

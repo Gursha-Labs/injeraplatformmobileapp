@@ -20,7 +20,7 @@ class VideoCardWidget extends StatelessWidget {
     final textColor = isDark ? Colors.white : Colors.black;
     final secondaryColor = isDark ? Colors.grey[400] : Colors.grey[600];
     final cardColor = isDark ? Colors.grey[900] : Colors.grey[100];
-    final borderColor = isDark ? Colors.grey[800] : Colors.grey[300];
+ 
 
     return GestureDetector(
       onTap: onTap,

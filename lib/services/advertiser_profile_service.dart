@@ -1,5 +1,3 @@
-// services/advertiser_profile_service.dart
-import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:injera/api/config.dart';
@@ -257,7 +255,7 @@ class AdvertiserProfileService {
       DebugUtil.logError(
         'DELETE_PROFILE_PICTURE_ERROR',
         e,
-        e.stackTrace ?? StackTrace.current,
+        e.stackTrace ,
       );
 
       if (e.response != null) {
