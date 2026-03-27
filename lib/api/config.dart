@@ -1,6 +1,6 @@
 // config/api_config.dart
 class ApiConfig {
-  static const String baseUrl = 'http://192.168.137.1:8000/api';
+  static const String baseUrl = 'http://10.18.78.19:8000/api';
 
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
