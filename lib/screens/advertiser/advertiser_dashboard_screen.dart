@@ -5,14 +5,15 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:injera/api/api_service.dart';
 import 'package:injera/api/config.dart';
 import 'package:injera/providers/auth_provider.dart';
+import 'package:injera/screens/advertiser/deposit_screen.dart';
 import 'package:injera/screens/advertiser/video_card_widget.dart';
 import 'package:injera/screens/advertiser/video_player_widget.dart';
+
 import '../../providers/theme_provider.dart';
 import '../../theme/app_colors.dart';
 import 'package:injera/providers/auth/auth_state.dart';
 import '../../models/advertiser_models.dart';
-
-
+import '../../services/payment_service.dart'; // Add this import
 
 class AdvertiserDashboardScreen extends ConsumerStatefulWidget {
   const AdvertiserDashboardScreen({super.key});
@@ -25,11 +26,13 @@ class AdvertiserDashboardScreen extends ConsumerStatefulWidget {
 class _AdvertiserDashboardScreenState
     extends ConsumerState<AdvertiserDashboardScreen> {
   final ApiService _apiService = ApiService();
+  final PaymentService _paymentService =
+      PaymentService(); // Add payment service
   late Future<AdvertiserProfile> _profileFuture;
-  late Future<List<AdvertiserVideo>> _videosFuture;
+
   AdvertiserProfile? _profile;
   List<AdvertiserVideo> _videos = [];
-  bool _isLoadingVideos = false;
+  double _walletBalance = 0.0; // Add wallet balance
   int _currentPage = 1;
   AuthState? get _authState => ref.read(authProvider);
 
@@ -37,7 +40,7 @@ class _AdvertiserDashboardScreenState
   void initState() {
     super.initState();
     _profileFuture = _loadProfile();
-    _videosFuture = _loadVideos();
+    _loadWalletBalance();
   }
 
   Future<AdvertiserProfile> _loadProfile() async {
@@ -59,161 +62,39 @@ class _AdvertiserDashboardScreenState
     }
   }
 
-  Future<List<AdvertiserVideo>> _loadVideos({bool loadMore = false}) async {
-    if (!loadMore) {
-      setState(() => _isLoadingVideos = true);
-    }
-
-    try {
-      final videos = await _apiService.getAdvertiserVideos(
-        page: loadMore ? _currentPage + 1 : 1,
-      );
-
-      if (loadMore) {
-        setState(() {
-          _videos.addAll(videos);
-          _currentPage++;
-        });
-      } else {
-        setState(() {
-          _videos = videos;
-          _currentPage = 1;
-        });
-      }
-
-      return videos;
-    } catch (e) {
-      if (!loadMore) {
-        // Show error in UI
-      }
-      return [];
-    } finally {
-      if (!loadMore) {
-        setState(() => _isLoadingVideos = false);
-      }
-    }
+  // Load wallet balance
+  Future<void> _loadWalletBalance() async {
+    final balance = await _paymentService.getWalletBalance();
+    setState(() {
+      _walletBalance = balance;
+    });
   }
 
-  void _playVideo(AdvertiserVideo video) {
-    Navigator.push(
+  // Navigate to deposit screen
+  Future<void> _navigateToDeposit() async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            AdVideoPlayerWidget(videoUrl: video.videoUrl, title: video.title),
+        builder: (context) => const DepositScreen(),
+        settings: const RouteSettings(name: '/deposit'),
       ),
     );
-  }
 
-  Widget _buildVideoSection(
-    Color bgColor,
-    Color textColor,
-    Color secondaryTextColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderDark),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'My Videos',
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              _profile != null
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${_profile!.totalAdsUploaded} videos',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ],
+    // Refresh wallet balance after returning from deposit screen
+    if (result == true) {
+      await _loadWalletBalance();
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Wallet updated successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
-
-          const SizedBox(height: 16),
-
-          if (_isLoadingVideos && _videos.isEmpty)
-            const Center(child: CircularProgressIndicator())
-          else if (_videos.isEmpty)
-            Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.videocam_off_outlined,
-                    color: secondaryTextColor,
-                    size: 48,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No videos uploaded yet',
-                    style: TextStyle(color: secondaryTextColor),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Upload First Video'),
-                  ),
-                ],
-              ),
-            )
-          else
-            Column(
-              children: [
-                ..._videos.map(
-                  (video) => VideoCardWidget(
-                    video: video,
-                    onTap: () => _playVideo(video),
-                    isDark: ref.watch(themeProvider).isDarkMode,
-                  ),
-                ),
-
-                if (_videos.length >= 10)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: ElevatedButton(
-                        onPressed: () => _loadVideos(loadMore: true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: AppColors.primary,
-                          side: BorderSide(color: AppColors.primary),
-                        ),
-                        child: const Text('Load More'),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-        ],
-      ),
-    );
+        );
+      }
+    }
   }
 
   @override
@@ -236,7 +117,7 @@ class _AdvertiserDashboardScreenState
       backgroundColor: bgColor,
       body: RefreshIndicator(
         onRefresh: () async {
-          await Future.wait([_loadProfile(), _loadVideos()]);
+          await Future.wait([_loadProfile(), _loadWalletBalance()]);
         },
         child: CustomScrollView(
           slivers: [
@@ -253,6 +134,69 @@ class _AdvertiserDashboardScreenState
                 ),
               ),
               actions: [
+                // Wallet balance button
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _navigateToDeposit,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.account_balance_wallet,
+                              color: AppColors.primary,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${_walletBalance.toStringAsFixed(2)} ETB',
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Add',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Theme toggle
                 IconButton(
                   icon: Container(
                     padding: const EdgeInsets.all(6),
@@ -261,7 +205,7 @@ class _AdvertiserDashboardScreenState
                       border: Border.all(color: AppColors.borderDark),
                     ),
                     child: Icon(
-                      isDark ? Icons.dark_mode : Icons.light,
+                      isDark ? Icons.dark_mode : Icons.light_mode,
                       color: textColor,
                       size: 20,
                     ),
@@ -278,6 +222,14 @@ class _AdvertiserDashboardScreenState
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
+                    // Wallet Card (NEW)
+                    _buildWalletCard(
+                      surfaceColor,
+                      textColor,
+                      secondaryTextColor,
+                    ),
+                    const SizedBox(height: 16),
+
                     // Welcome & Stats Combined
                     _buildWelcomeStats(
                       surfaceColor,
@@ -317,11 +269,6 @@ class _AdvertiserDashboardScreenState
                     const SizedBox(height: 16),
 
                     // Videos Section
-                    _buildVideoSection(
-                      surfaceColor,
-                      textColor,
-                      secondaryTextColor,
-                    ),
                   ],
                 ),
               ),
@@ -330,15 +277,241 @@ class _AdvertiserDashboardScreenState
         ),
       ),
 
-      // Floating Action Button for uploading new video
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Navigate to video upload screen
-        },
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
+      // Floating Action Button with Menu
+      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  // New: Wallet Card Widget
+  Widget _buildWalletCard(
+    Color surfaceColor,
+    Color textColor,
+    Color secondaryTextColor,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _navigateToDeposit,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Wallet Balance',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_walletBalance.toStringAsFixed(2)} ETB',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add, color: AppColors.primary, size: 16),
+                          SizedBox(width: 4),
+                          Text(
+                            'Add Money',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.trending_up,
+                            color: Colors.white70,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Earn 5% bonus on deposits > 500 ETB',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // New: Floating Action Button with Menu
+  Widget _buildFloatingActionButton() {
+    return FloatingActionButton.extended(
+      onPressed: () {
+        _showFloatingMenu();
+      },
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      icon: const Icon(Icons.add),
+      label: const Text('Quick Actions'),
+    );
+  }
+
+  // Show floating menu with options
+  void _showFloatingMenu() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.account_balance_wallet,
+                    color: AppColors.primary,
+                  ),
+                ),
+                title: const Text('Add Money to Wallet'),
+                subtitle: const Text('Deposit funds using Chapa'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  _navigateToDeposit();
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.video_call, color: Colors.blue),
+                ),
+                title: const Text('Upload New Video'),
+                subtitle: const Text('Create new ad campaign'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Navigate to video upload screen
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Coming soon!')));
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.history, color: Colors.green),
+                ),
+                title: const Text('Transaction History'),
+                subtitle: const Text('View all deposits and withdrawals'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Navigate to transaction history
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Coming soon!')));
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 

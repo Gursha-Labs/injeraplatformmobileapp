@@ -51,6 +51,7 @@ dependencies:
   flutter_svg: ^2.2.3
   iconsax_flutter: ^1.0.1
   slot_machine_ui: ^1.3.6
+  webview_flutter: ^4.13.1
 
 dev_dependencies:
   flutter_test:
