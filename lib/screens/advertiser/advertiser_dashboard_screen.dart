@@ -62,12 +62,22 @@ class _AdvertiserDashboardScreenState
     }
   }
 
-  // Load wallet balance
+  // Replace the existing _loadWalletBalance method
+
+  // Load wallet balance using ApiService
   Future<void> _loadWalletBalance() async {
-    final balance = await _paymentService.getWalletBalance();
-    setState(() {
-      _walletBalance = balance;
-    });
+    try {
+      final balance = await _apiService.getWalletBalance();
+      print('Balance loaded: $balance');
+      setState(() {
+        _walletBalance = balance;
+      });
+    } catch (e) {
+      print('Error loading balance: $e');
+      setState(() {
+        _walletBalance = 0.0;
+      });
+    }
   }
 
   // Navigate to deposit screen

@@ -1,6 +1,7 @@
 // lib/screens/deposit_screen.dart
 import 'package:flutter/material.dart';
 import 'package:injera/services/payment_service.dart';
+import 'package:injera/services/wallet_service.dart';
 
 class DepositScreen extends StatefulWidget {
   const DepositScreen({Key? key}) : super(key: key);
@@ -11,6 +12,7 @@ class DepositScreen extends StatefulWidget {
 
 class _DepositScreenState extends State<DepositScreen> {
   final PaymentService _paymentService = PaymentService();
+  final WalletService _walletService = WalletService();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final TextEditingController _amountController = TextEditingController();
@@ -26,9 +28,8 @@ class _DepositScreenState extends State<DepositScreen> {
     super.initState();
     _loadWalletBalance();
 
-    // Set up payment callbacks
     _paymentService.onPaymentSuccess = (data) {
-      _loadWalletBalance(); // Refresh balance after successful payment
+      _loadWalletBalance();
     };
   }
 
@@ -43,21 +44,23 @@ class _DepositScreenState extends State<DepositScreen> {
   }
 
   Future<void> _loadWalletBalance() async {
-    final balance = await _paymentService.getWalletBalance();
-    setState(() {
-      _currentBalance = balance;
-    });
+    try {
+      final balance = await _walletService.getWalletBalance();
+      debugPrint('Balance loaded: $balance');
+      setState(() {
+        _currentBalance = balance;
+      });
+    } catch (e) {
+      debugPrint('Error loading balance: $e');
+    }
   }
 
   Future<void> _handleDeposit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Step 1: Initialize deposit
       final initResult = await _paymentService.initializeDeposit(
         amount: double.parse(_amountController.text),
         firstName: _firstNameController.text.trim(),
@@ -71,41 +74,30 @@ class _DepositScreenState extends State<DepositScreen> {
         );
       }
 
-      // Step 2: Open payment WebView
       final paymentSuccess = await _paymentService.openPaymentWebView(
         context,
         initResult['checkout_url'],
       );
 
-      if (paymentSuccess) {
-        // Refresh wallet balance
+      if (paymentSuccess && mounted) {
         await _loadWalletBalance();
-
-        // Show success message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Payment successful! Money added to your wallet.'),
-              backgroundColor: Colors.green,
-            ),
-          );
-
-          // Go back after 2 seconds
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              Navigator.pop(context, true);
-            }
-          });
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Payment failed or was cancelled.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment successful! Money added to your wallet.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) Navigator.pop(context, true);
+        });
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment failed or was cancelled.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -114,11 +106,7 @@ class _DepositScreenState extends State<DepositScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -129,16 +117,19 @@ class _DepositScreenState extends State<DepositScreen> {
         title: const Text('Add Money to Wallet'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Current Balance Card
             Card(
               elevation: 4,
               color: Colors.green.shade50,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
@@ -149,7 +140,7 @@ class _DepositScreenState extends State<DepositScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '$_currentBalance ETB',
+                      '${_currentBalance.toStringAsFixed(2)} ETB',
                       style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -160,12 +151,12 @@ class _DepositScreenState extends State<DepositScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // Deposit Form
             Card(
               elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Form(
@@ -181,19 +172,13 @@ class _DepositScreenState extends State<DepositScreen> {
                           prefixIcon: Icon(Icons.attach_money),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
+                          if (value == null || value.isEmpty)
                             return 'Please enter amount';
-                          }
                           final amount = double.tryParse(value);
-                          if (amount == null) {
-                            return 'Invalid amount';
-                          }
-                          if (amount < 1) {
-                            return 'Minimum amount is 1 ETB';
-                          }
-                          if (amount > 100000) {
+                          if (amount == null) return 'Invalid amount';
+                          if (amount < 1) return 'Minimum amount is 1 ETB';
+                          if (amount > 100000)
                             return 'Maximum amount is 100,000 ETB';
-                          }
                           return null;
                         },
                       ),
@@ -205,12 +190,8 @@ class _DepositScreenState extends State<DepositScreen> {
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.person),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter first name';
-                          }
-                          return null;
-                        },
+                        validator: (value) =>
+                            value!.isEmpty ? 'Please enter first name' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -220,12 +201,8 @@ class _DepositScreenState extends State<DepositScreen> {
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.person_outline),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter last name';
-                          }
-                          return null;
-                        },
+                        validator: (value) =>
+                            value!.isEmpty ? 'Please enter last name' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -238,9 +215,8 @@ class _DepositScreenState extends State<DepositScreen> {
                           prefixIcon: Icon(Icons.phone),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
+                          if (value == null || value.isEmpty)
                             return 'Please enter phone number';
-                          }
                           if (!RegExp(r'^09[0-9]{8}$').hasMatch(value)) {
                             return 'Enter a valid Ethiopian phone number (09XXXXXXXX)';
                           }
@@ -252,10 +228,7 @@ class _DepositScreenState extends State<DepositScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // Deposit Button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -265,7 +238,7 @@ class _DepositScreenState extends State<DepositScreen> {
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: _isLoading
@@ -285,10 +258,7 @@ class _DepositScreenState extends State<DepositScreen> {
                       ),
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Info Text
             Center(
               child: Text(
                 'You will be redirected to Chapa payment gateway',
