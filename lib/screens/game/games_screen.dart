@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:injera/providers/theme_provider.dart';
+
 import 'package:injera/screens/game/components/game_card.dart';
 import 'package:injera/screens/game/games/SlotGameApp.dart';
 import 'package:injera/screens/game/games/color_match_game.dart';
-
 import 'package:injera/screens/game/games/quiz_game.dart';
 import 'package:injera/screens/game/games/spin_game.dart';
 import 'package:injera/screens/game/games/tap_game.dart';
+import 'package:injera/screens/withdrawal_screen.dart';
 
 import 'package:injera/theme/app_colors.dart';
 
@@ -92,6 +93,13 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
     }
   }
 
+  void _navigateToWithdrawal() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => WithdrawalScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider).isDarkMode;
@@ -111,14 +119,21 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
           ),
         ),
         actions: [
+          // Points/Wallet button that navigates to withdrawal screen
           IconButton(
             icon: Icon(
               Icons.account_balance_wallet_rounded,
               color: isDark ? AppColors.pureWhite : AppColors.pureBlack,
             ),
-            onPressed: () {
-              // Show points balance
-            },
+            onPressed: _navigateToWithdrawal,
+          ),
+          // Optional: Add a withdraw/dollar icon for direct withdrawal access
+          IconButton(
+            icon: Icon(
+              Icons.request_quote_rounded,
+              color: isDark ? AppColors.pureWhite : AppColors.pureBlack,
+            ),
+            onPressed: _navigateToWithdrawal,
           ),
         ],
       ),
@@ -153,7 +168,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
             ),
           ),
 
-          // Stats Bar
+          // Stats Bar with Withdrawal Button
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             padding: const EdgeInsets.all(20),
@@ -220,7 +235,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
             ),
           ),
 
-          // Bottom Info
+          // Bottom Info with Withdrawal Button
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -249,6 +264,41 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
                       color: isDark
                           ? AppColors.textSecondaryDark
                           : AppColors.textSecondaryLight,
+                    ),
+                  ),
+                ),
+                // Add Withdrawal Button in bottom bar
+                GestureDetector(
+                  onTap: _navigateToWithdrawal,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.orange, Colors.deepOrange],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.payment_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Withdraw',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

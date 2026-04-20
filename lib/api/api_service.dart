@@ -11,6 +11,8 @@ class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal();
+  // Add this getter to your ApiService class
+  Dio get dio => _dio!;
 
   Dio? _dio;
   final String _baseUrl = ApiConfig.baseUrl;
@@ -157,6 +159,38 @@ class ApiService {
       }
 
       rethrow;
+    }
+  }
+
+  // Add this method to your existing ApiService class in api_service.dart
+
+  /// Get wallet balance
+  Future<double> getWalletBalance() async {
+    await _ensureInitialized();
+
+    try {
+      final response = await _dio!.get('/wallet/balance');
+      debugPrint('Wallet balance response: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        // Handle your backend's response format
+        if (data['success'] == true && data['data'] != null) {
+          final balance = data['data']['balance'];
+          return (balance ?? 0).toDouble();
+        }
+
+        // Fallback for direct balance
+        if (data['balance'] != null) {
+          return (data['balance'] as num).toDouble();
+        }
+      }
+
+      return 0.0;
+    } on DioException catch (e) {
+      debugPrint('Get wallet balance error: ${e.message}');
+      return 0.0;
     }
   }
 

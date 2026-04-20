@@ -1,7 +1,7 @@
 // config/api_config.dart
 class ApiConfig {
-  static const String baseUrl = 'http://10.18.78.17:8000/api';
-  //'https://hypergolic-erma-violably.ngrok-free.dev/api';
+  static const String baseUrl = 'https://debit-gag-tipper.ngrok-free.dev/api';
+  //static const String baseUrl'https://hypergolic-erma-violably.ngrok-free.dev/api';
 
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
