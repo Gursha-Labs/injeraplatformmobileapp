@@ -7,6 +7,7 @@ import 'package:injera/screens/advertiser/advertiser_dashboard_screen.dart';
 import 'package:injera/screens/advertiser/advertiser_profile_screen.dart';
 import 'package:injera/screens/advertiser/advertiser_upload_screen.dart';
 import 'package:injera/screens/advertiser/drawerscreens/advertiser_settings_screen.dart';
+import 'package:injera/screens/subscription_screen.dart';
 import 'package:injera/theme/app_theme.dart';
 import 'package:injera/theme/app_colors.dart';
 import 'advertiser_main_screen.dart';
@@ -464,7 +465,7 @@ class _AdvertiserHomePage extends ConsumerWidget {
                             Navigator.pushNamed(
                               context,
                               '/advertiser/settings',
-                            ); // Update this line
+                            );
                           },
                         ),
                         const SizedBox(height: 4),
@@ -527,14 +528,13 @@ class _AdvertiserHomePage extends ConsumerWidget {
               ),
               centerTitle: true,
               actions: [
-                // Dark mode toggle icon
+                // Dark mode toggle
                 Consumer(
                   builder: (context, ref, child) {
                     final isDark = ref.watch(themeProvider).isDarkMode;
                     return IconButton(
                       icon: Icon(
                         isDark ? Icons.light_mode : Icons.dark_mode,
-                        size: 24,
                         color: isDarkMode
                             ? AppColors.pureWhite
                             : AppColors.pureBlack,
@@ -542,8 +542,37 @@ class _AdvertiserHomePage extends ConsumerWidget {
                       onPressed: () {
                         ref.read(themeProvider.notifier).toggleTheme();
                       },
+                      tooltip: isDark ? 'Light Mode' : 'Dark Mode',
                     );
                   },
+                ),
+                // Subscribe Button
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SubscriptionScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.workspace_premium, size: 18),
+                    label: const Text('Subscribe'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEF4444),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
                 ),
               ],
             ),

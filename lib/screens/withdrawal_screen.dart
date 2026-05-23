@@ -43,7 +43,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
   // Map for withdrawal method logos
   final Map<String, String> _methodLogos = {
     'telebirr': 'assets/telebirr.png',
-    'mpesa': 'assets/mpesa.png', // fallback, not in your list
+    'mpesa': 'assets/mpesa.png',
     'cbe_wallet': 'assets/cbebirr.png',
     'cbe': 'assets/cbe.png',
     'awash_bank': 'assets/awashbank.png',
@@ -367,18 +367,22 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Wallet balance card - elegant minimal
+          // Wallet balance card - Professional red gradient
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+              ),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: Colors.red.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
@@ -394,31 +398,46 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                       ? _formatCurrency(_walletBalance!)
                       : 'Loading...',
                   style: const TextStyle(
-                    fontSize: 36,
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Ready to withdraw',
+                    style: TextStyle(fontSize: 11, color: Colors.white70),
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
-          // Withdrawal form - clean and modern
+          // Withdrawal form - Professional card design
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.black.withOpacity(0.08)),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey.shade100, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
@@ -427,44 +446,61 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Request Withdrawal',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Request Withdrawal',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   // Amount
                   TextFormField(
                     controller: _amountController,
                     decoration: InputDecoration(
                       labelText: 'Amount',
+                      labelStyle: TextStyle(color: Colors.grey.shade600),
                       prefixText: 'ETB ',
-
+                      prefixStyle: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: Colors.black.withOpacity(0.2),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: Colors.black.withOpacity(0.2),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(
                           color: Colors.red,
                           width: 1.5,
                         ),
                       ),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Colors.grey.shade50,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                     ),
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
@@ -474,6 +510,11 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                         RegExp(r'^\d+\.?\d{0,2}'),
                       ),
                     ],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter amount';
@@ -491,9 +532,9 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                       return null;
                     },
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 20),
 
-                  // Withdrawal Method with horizontal image selection
+                  // Withdrawal Method
                   const Text(
                     'Select Method',
                     style: TextStyle(
@@ -504,7 +545,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 80,
+                    height: 85,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: WithdrawalService.withdrawalMethods.length,
@@ -520,19 +561,29 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                               _selectedMethod = method;
                             });
                           },
-                          child: Container(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
                             width: 80,
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? Colors.red.withOpacity(0.05)
                                   : Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isSelected
                                     ? Colors.red
-                                    : Colors.black.withOpacity(0.1),
-                                width: isSelected ? 1.5 : 1,
+                                    : Colors.grey.shade200,
+                                width: isSelected ? 2 : 1,
                               ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.red.withOpacity(0.2),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -540,8 +591,8 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                                 if (logoPath != null)
                                   Image.asset(
                                     logoPath,
-                                    height: 40,
-                                    width: 40,
+                                    height: 38,
+                                    width: 38,
                                     fit: BoxFit.contain,
                                   ),
                                 const SizedBox(height: 6),
@@ -554,7 +605,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                                         : FontWeight.w400,
                                     color: isSelected
                                         ? Colors.red
-                                        : Colors.black87,
+                                        : Colors.grey.shade700,
                                   ),
                                 ),
                               ],
@@ -564,74 +615,107 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                       },
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 20),
 
-                  // Account Number
+                  // Account Number - NUMBERS ONLY
                   TextFormField(
                     controller: _accountNumberController,
                     decoration: InputDecoration(
                       labelText: 'Account Number',
+                      labelStyle: TextStyle(color: Colors.grey.shade600),
+                      hintText: 'Enter numbers only',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: Colors.black.withOpacity(0.2),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: Colors.black.withOpacity(0.2),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(
                           color: Colors.red,
                           width: 1.5,
                         ),
                       ),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Colors.grey.shade50,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(20),
+                    ],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter account number';
                       }
+                      if (value.trim().length < 5) {
+                        return 'Account number must be at least 5 digits';
+                      }
                       return null;
                     },
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
 
-                  // Account Name
+                  // Account Name - LETTERS ONLY (and spaces)
                   TextFormField(
                     controller: _accountNameController,
                     decoration: InputDecoration(
                       labelText: 'Account Name',
+                      labelStyle: TextStyle(color: Colors.grey.shade600),
+                      hintText: 'Enter letters only',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: Colors.black.withOpacity(0.2),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: Colors.black.withOpacity(0.2),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(
                           color: Colors.red,
                           width: 1.5,
                         ),
                       ),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Colors.grey.shade50,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^[a-zA-Z\s]+$'),
+                      ),
+                      LengthLimitingTextInputFormatter(50),
+                    ],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter account name';
+                      }
+                      if (value.trim().length < 3) {
+                        return 'Account name must be at least 3 characters';
                       }
                       return null;
                     },
@@ -639,13 +723,21 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
 
                   if (_submitError != null) ...[
                     const SizedBox(height: 16),
-                    Text(
-                      _submitError!,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.red.withOpacity(0.2)),
+                      ),
+                      child: Text(
+                        _submitError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      ),
                     ),
                   ],
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
                   SizedBox(
                     width: double.infinity,
@@ -657,15 +749,23 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        disabledBackgroundColor: Colors.grey.shade300,
                       ),
                       child: _isSubmitting
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                           : const Text(
                               'Submit Request',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -724,7 +824,11 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
 
   Widget _buildHistoryTab() {
     if ((_isLoading || _isRefreshing) && _withdrawals.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+        ),
+      );
     }
 
     if (_error != null && _withdrawals.isEmpty) {
@@ -732,15 +836,18 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 16),
-            Text(_error!),
+            Text(_error!, style: TextStyle(color: Colors.grey.shade600)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => _loadWithdrawals(refresh: true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               child: const Text('Retry'),
             ),
@@ -754,9 +861,12 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.history, size: 48, color: Colors.grey),
+            Icon(Icons.history, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 16),
-            const Text('No withdrawal requests yet'),
+            const Text(
+              'No withdrawal requests yet',
+              style: TextStyle(color: Colors.grey),
+            ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => _tabController.animateTo(0),
@@ -771,6 +881,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
     return RefreshIndicator(
       onRefresh: () => _loadWithdrawals(refresh: true),
       color: Colors.red,
+      backgroundColor: Colors.white,
       child: ListView.builder(
         itemCount: _withdrawals.length + (_hasMore && !_isRefreshing ? 1 : 0),
         itemBuilder: (context, index) {
@@ -779,7 +890,9 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(16),
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
                 ),
               );
             }
@@ -805,137 +918,215 @@ class _WithdrawalScreenState extends State<WithdrawalScreen>
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Colors.black.withOpacity(0.08)),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade100, width: 1.5),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                // Logo container
-                Container(
-                  width: 48,
-                  height: 48,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  // Logo container
+                  Container(
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: logoPath != null
+                        ? Image.asset(logoPath, fit: BoxFit.contain)
+                        : Icon(
+                            Icons.account_balance,
+                            color: Colors.grey.shade600,
+                            size: 24,
+                          ),
                   ),
-                  child: logoPath != null
-                      ? Image.asset(logoPath, fit: BoxFit.contain)
-                      : const Icon(
-                          Icons.account_balance,
-                          color: Colors.black54,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _formatCurrency(withdrawal.amount),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                         ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatMethodName(withdrawal.withdrawalMethod),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(
+                        withdrawal.status,
+                      ).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      withdrawal.displayStatus,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _getStatusColor(withdrawal.status),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Divider(color: Colors.grey.shade100, height: 1),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.account_circle,
+                          size: 14,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${withdrawal.accountNumber}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
                     children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 4),
                       Text(
-                        _formatCurrency(withdrawal.amount),
+                        _formatDate(withdrawal.createdAt),
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          fontSize: 11,
+                          color: Colors.grey,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _formatMethodName(withdrawal.withdrawalMethod),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.person, size: 14, color: Colors.grey.shade500),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      withdrawal.accountName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              if (withdrawal.withdrawalReference != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.receipt, size: 14, color: Colors.grey.shade500),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Ref: ${withdrawal.withdrawalReference}',
                         style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (withdrawal.reviewNotes != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          withdrawal.reviewNotes!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(withdrawal.status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    withdrawal.displayStatus,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: _getStatusColor(withdrawal.status),
+              ],
+              if (withdrawal.isCancellable) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => _cancelWithdrawal(withdrawal),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
+                    child: const Text('Cancel Request'),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Account: ${withdrawal.accountNumber}',
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Text(
-                  _formatDate(withdrawal.createdAt),
-                  style: const TextStyle(fontSize: 11, color: Colors.black38),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Name: ${withdrawal.accountName}',
-              style: const TextStyle(fontSize: 12, color: Colors.black54),
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (withdrawal.withdrawalReference != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Ref: ${withdrawal.withdrawalReference}',
-                style: const TextStyle(fontSize: 11, color: Colors.black38),
-              ),
             ],
-            if (withdrawal.reviewNotes != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.02),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Note: ${withdrawal.reviewNotes}',
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
-                ),
-              ),
-            ],
-            if (withdrawal.isCancellable) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => _cancelWithdrawal(withdrawal),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Cancel Request'),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

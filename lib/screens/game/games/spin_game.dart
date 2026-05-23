@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:injera/models/spin_game/spin_response.dart';
 import 'package:injera/services/spin_game_service.dart';
+import 'package:injera/widgets/loading_spinner.dart'; // Add this import
 
 // Provider for spin game service
 final spinGameServiceProvider = Provider((ref) => SpinGameService());
@@ -364,7 +365,12 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      // Replace with injera loading spinner
+      return const Scaffold(
+        body: Center(
+          child: InjeraLoadingSpinner(size: 80, loadingText: 'Loading game...'),
+        ),
+      );
     }
 
     return Scaffold(
@@ -376,7 +382,7 @@ class _SpinGameScreenState extends ConsumerState<SpinGameScreen>
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.amber,
+              color: Colors.redAccent,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
