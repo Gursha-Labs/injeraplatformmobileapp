@@ -244,6 +244,17 @@ class ApiService {
     }
   }
 
+  Future<void> testSubscriptionApi() async {
+    await _ensureInitialized();
+    try {
+      final response = await _dio!.get(ApiConfig.subscriptions);
+      debugPrint('Test Subscriptions API: ${response.statusCode}');
+      debugPrint('Test Subscriptions Data: ${response.data}');
+    } catch (e) {
+      debugPrint('Test Subscriptions Error: $e');
+    }
+  }
+
   // Get single video by ID
   Future<AdvertiserVideo> getVideoById(String id) async {
     await _ensureInitialized();

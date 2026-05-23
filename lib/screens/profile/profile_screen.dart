@@ -7,6 +7,7 @@ import 'package:injera/providers/theme_provider.dart';
 import 'package:injera/screens/profile/componets/profile_header.dart';
 import 'package:injera/screens/profile/edit_profile_screen.dart';
 import 'package:injera/theme/app_colors.dart';
+import 'package:injera/widgets/loading_spinner.dart'; // Add this import
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -291,23 +292,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildBody(bool isDark, ProfileState state) {
     if (state.isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              color: isDark ? AppColors.pureWhite : AppColors.pureBlack,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Loading profile...',
-              style: TextStyle(
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondaryLight,
-              ),
-            ),
-          ],
+      // Replace with injera loading spinner
+      return const Center(
+        child: InjeraLoadingSpinner(
+          size: 80,
+          loadingText: 'Loading profile...',
         ),
       );
     }

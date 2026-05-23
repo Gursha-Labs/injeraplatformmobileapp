@@ -1,22 +1,72 @@
-// screens/advertiser/advertiser_analytics_screen.dart
+// lib/screens/advertiser/advertiser_analytics_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/analytics_service.dart';
+import '../../models/analytics_model.dart';
 import '../../theme/app_colors.dart';
 
-class AdvertiserAnalyticsScreen extends ConsumerWidget {
+class AdvertiserAnalyticsScreen extends ConsumerStatefulWidget {
   const AdvertiserAnalyticsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdvertiserAnalyticsScreen> createState() =>
+      _AdvertiserAnalyticsScreenState();
+}
+
+class _AdvertiserAnalyticsScreenState
+    extends ConsumerState<AdvertiserAnalyticsScreen> {
+  final AnalyticsService _analyticsService = AnalyticsService();
+  late Future<AdvertiserAnalytics> _analyticsFuture;
+  int _selectedDays = 30;
+  bool _isLoading = true;
+  String? _error;
+  AdvertiserAnalytics? _analytics;
+
+  final List<int> _dateRangeOptions = [7, 14, 30, 60, 90];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAnalytics();
+  }
+
+  Future<void> _loadAnalytics() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final analytics = await _analyticsService.getAdvertiserAnalytics(
+        days: _selectedDays,
+      );
+      setState(() {
+        _analytics = analytics;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _changeDateRange(int days) {
+    setState(() {
+      _selectedDays = days;
+    });
+    _loadAnalytics();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider).isDarkMode;
     final bgColor = isDark
         ? AppColors.backgroundDark
         : AppColors.backgroundLight;
-    final surfaceColor = isDark
-        ? AppColors.surfaceDark
-        : AppColors.surfaceLight;
     final textColor = isDark
         ? AppColors.textPrimaryDark
         : AppColors.textPrimaryLight;
@@ -26,101 +76,214 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: bgColor,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: bgColor,
-            elevation: 0,
-            pinned: true,
-            title: Text(
-              'Analytics',
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
+      body: RefreshIndicator(
+        onRefresh: _loadAnalytics,
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              backgroundColor: bgColor,
+              elevation: 0,
+              pinned: true,
+              title: Text(
+                'Analytics',
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                ),
               ),
+              actions: [_buildDateRangeSelector(textColor, secondaryTextColor)],
             ),
-            actions: [
-              Container(
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+            SliverToBoxAdapter(
+              child: _isLoading
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(50),
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFFEF4444),
+                          ),
+                        ),
+                      ),
+                    )
+                  : _error != null
+                  ? _buildErrorWidget(secondaryTextColor)
+                  : _analytics != null
+                  ? _buildContent(
+                      _analytics!,
+                      textColor,
+                      secondaryTextColor,
+                      isDark,
+                    )
+                  : _buildEmptyWidget(secondaryTextColor),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateRangeSelector(Color textColor, Color secondaryTextColor) {
+    return Container(
+      margin: const EdgeInsets.all(8),
+      child: PopupMenuButton<int>(
+        icon: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.borderDark),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Text(
+                'Last $_selectedDays days',
+                style: TextStyle(color: textColor, fontSize: 12),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.arrow_drop_down, color: textColor, size: 16),
+            ],
+          ),
+        ),
+        onSelected: (int value) {
+          _changeDateRange(value);
+        },
+        itemBuilder: (context) => _dateRangeOptions.map((days) {
+          return PopupMenuItem<int>(
+            value: days,
+            child: Text('Last $days days'),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget(Color secondaryTextColor) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(50),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+            const SizedBox(height: 16),
+            Text(
+              _error ?? 'Failed to load analytics',
+              style: TextStyle(color: secondaryTextColor),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadAnalytics,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyWidget(Color secondaryTextColor) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(50),
+        child: Column(
+          children: [
+            Icon(Icons.analytics_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No analytics data available',
+              style: TextStyle(color: secondaryTextColor),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    AdvertiserAnalytics analytics,
+    Color textColor,
+    Color secondaryTextColor,
+    bool isDark,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildKpiGrid(analytics, textColor, secondaryTextColor),
+          const SizedBox(height: 16),
+          _buildPerformanceChart(
+            analytics,
+            textColor,
+            secondaryTextColor,
+            isDark,
+          ),
+          const SizedBox(height: 16),
+          _buildViewsRevenueChart(
+            analytics,
+            textColor,
+            secondaryTextColor,
+            isDark,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildAudienceInsights(
+                  textColor,
+                  secondaryTextColor,
+                  isDark,
                 ),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.borderDark
-                        : AppColors.borderLight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Last 7 days',
-                      style: TextStyle(color: textColor, fontSize: 12),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.arrow_drop_down, color: textColor, size: 16),
-                  ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildPlatformDistribution(
+                  textColor,
+                  secondaryTextColor,
+                  isDark,
                 ),
               ),
             ],
-          ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Compact KPI Grid
-                  _buildCompactKpiGrid(textColor, secondaryTextColor),
-                  const SizedBox(height: 16),
-
-                  // Combined Charts
-                  _buildCombinedCharts(
-                    surfaceColor,
-                    textColor,
-                    secondaryTextColor,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Audience & Platform Side by Side
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildAudienceInsights(
-                          surfaceColor,
-                          textColor,
-                          secondaryTextColor,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildPlatformDistribution(
-                          surfaceColor,
-                          textColor,
-                          secondaryTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCompactKpiGrid(Color textColor, Color secondaryTextColor) {
+  Widget _buildKpiGrid(
+    AdvertiserAnalytics analytics,
+    Color textColor,
+    Color secondaryTextColor,
+  ) {
     final kpis = [
-      _KpiData('124.5K', 'Impressions', '+12.4%', true),
-      _KpiData('8.2K', 'Engagement', '+8.1%', true),
-      _KpiData('6.58%', 'CTR', '+2.3%', true),
-      _KpiData('\$5,248', 'Revenue', '+15.2%', true),
+      _KpiData(
+        _formatNumber(analytics.totalViews),
+        'Impressions',
+        _formatGrowth(analytics.weeklyGrowth),
+        analytics.weeklyGrowth >= 0,
+      ),
+      _KpiData(
+        _formatNumber(analytics.totalComments + analytics.totalOrders),
+        'Engagement',
+        _formatGrowth(analytics.engagementRate),
+        analytics.engagementRate >= 5,
+      ),
+      _KpiData(
+        '${analytics.ctr.toStringAsFixed(2)}%',
+        'CTR',
+        _formatGrowth(analytics.ctr - 5),
+        analytics.ctr >= 5,
+      ),
+      _KpiData(
+        'ETB ${_formatNumber(analytics.totalRevenue.toInt())}',
+        'Revenue',
+        _formatGrowth(analytics.weeklyGrowth),
+        analytics.weeklyGrowth >= 0,
+      ),
     ];
 
     return GridView.builder(
@@ -148,12 +311,15 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    kpi.value,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      kpi.value,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Container(
@@ -167,13 +333,26 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
                           : Colors.red.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      kpi.change,
-                      style: TextStyle(
-                        color: kpi.isPositive ? Colors.green : Colors.red,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          kpi.isPositive
+                              ? Icons.trending_up
+                              : Icons.trending_down,
+                          size: 10,
+                          color: kpi.isPositive ? Colors.green : Colors.red,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          kpi.change,
+                          style: TextStyle(
+                            color: kpi.isPositive ? Colors.green : Colors.red,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -190,15 +369,44 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCombinedCharts(
-    Color surfaceColor,
+  Widget _buildPerformanceChart(
+    AdvertiserAnalytics analytics,
     Color textColor,
     Color secondaryTextColor,
+    bool isDark,
   ) {
+    if (analytics.series.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(50),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.borderDark),
+        ),
+        child: Center(
+          child: Text(
+            'No data available',
+            style: TextStyle(color: secondaryTextColor),
+          ),
+        ),
+      );
+    }
+
+    final spots = <FlSpot>[];
+    for (int i = 0; i < analytics.series.length; i++) {
+      spots.add(FlSpot(i.toDouble(), analytics.series[i].views.toDouble()));
+    }
+
+    // FIXED: Convert num to double explicitly
+    final double maxY = spots.isEmpty
+        ? 100.0
+        : (spots.map((e) => e.y).reduce((a, b) => a > b ? a : b) * 1.1)
+              .toDouble();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: surfaceColor,
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderDark),
       ),
@@ -209,55 +417,175 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Performance Overview',
+                'Views Overview',
                 style: TextStyle(
                   color: textColor,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Icon(Icons.more_vert, color: secondaryTextColor, size: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Total: ${_formatNumber(analytics.totalViews)}',
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
-
-          // Mini Line Chart
           SizedBox(
-            height: 60,
+            height: 200,
             child: LineChart(
               LineChartData(
-                gridData: FlGridData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawHorizontalLine: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: secondaryTextColor.withOpacity(0.1),
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
                 borderData: FlBorderData(show: false),
-                titlesData: FlTitlesData(show: false),
-                minX: 0,
-                maxX: 6,
-                minY: 0,
-                maxY: 6,
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: spots.length > 7 ? spots.length / 7 : 1,
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index >= 0 && index < analytics.series.length) {
+                          final date = DateTime.parse(
+                            analytics.series[index].date,
+                          );
+                          return Transform.rotate(
+                            angle: -0.5,
+                            child: Text(
+                              '${date.day}/${date.month}',
+                              style: TextStyle(
+                                color: secondaryTextColor,
+                                fontSize: 10,
+                              ),
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          _formatNumber(value.toInt()),
+                          style: TextStyle(
+                            color: secondaryTextColor,
+                            fontSize: 10,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 3),
-                      FlSpot(1, 4),
-                      FlSpot(2, 2.5),
-                      FlSpot(3, 5),
-                      FlSpot(4, 3.5),
-                      FlSpot(5, 6),
-                      FlSpot(6, 4.5),
-                    ],
+                    spots: spots,
                     isCurved: true,
-                    color: AppColors.primary,
-                    barWidth: 2,
+                    color: const Color(0xFFEF4444),
+                    barWidth: 3,
                     dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: const Color(0xFFEF4444).withOpacity(0.1),
+                    ),
                   ),
                 ],
+                minY: 0,
+                maxY: maxY,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
 
-          // Mini Bar Chart
+  Widget _buildViewsRevenueChart(
+    AdvertiserAnalytics analytics,
+    Color textColor,
+    Color secondaryTextColor,
+    bool isDark,
+  ) {
+    if (analytics.series.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final barGroups = <BarChartGroupData>[];
+    final startIndex = analytics.series.length > 7
+        ? analytics.series.length - 7
+        : 0;
+
+    for (int i = startIndex; i < analytics.series.length; i++) {
+      final data = analytics.series[i];
+      barGroups.add(
+        BarChartGroupData(
+          x: i - startIndex,
+          barRods: [
+            BarChartRodData(
+              toY: data.views.toDouble(),
+              width: 8,
+              color: const Color(0xFFEF4444),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderDark),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recent Performance',
+            style: TextStyle(
+              color: textColor,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Last ${barGroups.length} days views',
+            style: TextStyle(color: secondaryTextColor, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
           SizedBox(
-            height: 80,
+            height: 150,
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
@@ -268,14 +596,23 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                        final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-                        return Text(
-                          days[value.toInt()],
-                          style: TextStyle(
-                            color: secondaryTextColor,
-                            fontSize: 8,
-                          ),
-                        );
+                        final index = value.toInt();
+                        if (index >= 0 && index < barGroups.length) {
+                          final dataIndex = startIndex + index;
+                          if (dataIndex < analytics.series.length) {
+                            final date = DateTime.parse(
+                              analytics.series[dataIndex].date,
+                            );
+                            return Text(
+                              '${date.day}/${date.month}',
+                              style: TextStyle(
+                                color: secondaryTextColor,
+                                fontSize: 10,
+                              ),
+                            );
+                          }
+                        }
+                        return const Text('');
                       },
                     ),
                   ),
@@ -289,20 +626,7 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
                     sideTitles: SideTitles(showTitles: false),
                   ),
                 ),
-                barGroups: List.generate(7, (index) {
-                  final values = [8, 12, 6, 15, 10, 18, 14];
-                  return BarChartGroupData(
-                    x: index,
-                    barRods: [
-                      BarChartRodData(
-                        toY: values[index].toDouble(),
-                        width: 4,
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ],
-                  );
-                }),
+                barGroups: barGroups,
               ),
             ),
           ),
@@ -312,14 +636,20 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
   }
 
   Widget _buildAudienceInsights(
-    Color surfaceColor,
     Color textColor,
     Color secondaryTextColor,
+    bool isDark,
   ) {
+    final audienceData = [
+      AudienceData('18-25', 35, const Color(0xFFEF4444)),
+      AudienceData('26-35', 45, Colors.grey[600]!),
+      AudienceData('36+', 20, Colors.grey[400]!),
+    ];
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: surfaceColor,
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderDark),
       ),
@@ -342,41 +672,19 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
                 Expanded(
                   child: PieChart(
                     PieChartData(
-                      sections: [
-                        PieChartSectionData(
-                          value: 35,
-                          color: AppColors.primary,
-                          radius: 25,
-                          title: '35%',
+                      sections: audienceData.map((data) {
+                        return PieChartSectionData(
+                          value: data.percentage,
+                          color: data.color,
+                          radius: 30,
+                          title: '${data.percentage.toInt()}%',
                           titleStyle: const TextStyle(
                             fontSize: 10,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
-                        ),
-                        PieChartSectionData(
-                          value: 45,
-                          color: Colors.grey[600]!,
-                          radius: 25,
-                          title: '45%',
-                          titleStyle: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        PieChartSectionData(
-                          value: 20,
-                          color: Colors.grey[400]!,
-                          radius: 25,
-                          title: '20%',
-                          titleStyle: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                        );
+                      }).toList(),
                       centerSpaceRadius: 20,
                     ),
                   ),
@@ -386,11 +694,40 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildAudienceItem('18-25', '35%', AppColors.primary),
-                      _buildAudienceItem('26-35', '45%', Colors.grey[600]!),
-                      _buildAudienceItem('36+', '20%', Colors.grey[400]!),
-                    ],
+                    children: audienceData.map((data) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: data.color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              data.ageRange,
+                              style: TextStyle(
+                                color: secondaryTextColor,
+                                fontSize: 10,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${data.percentage.toInt()}%',
+                              style: TextStyle(
+                                color: textColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               ],
@@ -401,50 +738,21 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAudienceItem(String range, String percentage, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            range,
-            style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 10),
-          ),
-          const Spacer(),
-          Text(
-            percentage,
-            style: TextStyle(
-              color: AppColors.textPrimaryDark,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPlatformDistribution(
-    Color surfaceColor,
     Color textColor,
     Color secondaryTextColor,
+    bool isDark,
   ) {
     final platforms = [
-      _PlatformData('Mobile', 65, AppColors.primary),
-      _PlatformData('Desktop', 25, Colors.grey[600]!),
-      _PlatformData('Tablet', 10, Colors.grey[400]!),
+      PlatformData('Mobile', 65, const Color(0xFFEF4444)),
+      PlatformData('Desktop', 25, Colors.grey[600]!),
+      PlatformData('Tablet', 10, Colors.grey[400]!),
     ];
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: surfaceColor,
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderDark),
       ),
@@ -497,7 +805,9 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
                       flex: 2,
                       child: LinearProgressIndicator(
                         value: platform.percentage / 100,
-                        backgroundColor: Colors.grey[800],
+                        backgroundColor: isDark
+                            ? Colors.grey[800]
+                            : Colors.grey[300],
                         valueColor: AlwaysStoppedAnimation(platform.color),
                         borderRadius: BorderRadius.circular(2),
                         minHeight: 4,
@@ -512,6 +822,22 @@ class AdvertiserAnalyticsScreen extends ConsumerWidget {
       ),
     );
   }
+
+  String _formatNumber(int number) {
+    if (number >= 1000000) {
+      return '${(number / 1000000).toStringAsFixed(1)}M';
+    } else if (number >= 1000) {
+      return '${(number / 1000).toStringAsFixed(1)}K';
+    }
+    return number.toString();
+  }
+
+  String _formatGrowth(double value) {
+    if (value > 0) {
+      return '+${value.toStringAsFixed(1)}%';
+    }
+    return '${value.toStringAsFixed(1)}%';
+  }
 }
 
 class _KpiData {
@@ -521,12 +847,4 @@ class _KpiData {
   final bool isPositive;
 
   _KpiData(this.value, this.label, this.change, this.isPositive);
-}
-
-class _PlatformData {
-  final String name;
-  final int percentage;
-  final Color color;
-
-  _PlatformData(this.name, this.percentage, this.color);
 }

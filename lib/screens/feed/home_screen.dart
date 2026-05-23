@@ -9,7 +9,8 @@ import 'package:injera/models/ad_video_model.dart';
 import 'package:injera/providers/ad_feed_provider.dart';
 import 'package:injera/providers/points_provider.dart';
 import 'package:injera/widgets/points_display_widget.dart';
-import 'package:share_plus/share_plus.dart'; // Add this import
+import 'package:share_plus/share_plus.dart';
+import 'package:injera/widgets/loading_spinner.dart'; // Add this import
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -138,8 +139,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildVideoFeed(AdFeedState state) {
     if (state.isLoading && state.ads.isEmpty) {
+      // Replace with injera loading spinner
       return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+        child: InjeraLoadingSpinner(size: 80, loadingText: 'Loading videos...'),
       );
     }
 
@@ -332,7 +334,7 @@ ${widget.ad.tags.isNotEmpty ? 'Tags: ${widget.ad.tags.map((t) => '#${t.name}').j
                 Divider(color: Colors.grey[800]),
                 _buildShareOption(
                   context,
-                  icon: Icons.content_copy,
+                  icon: Icons.copy_rounded,
                   label: 'Copy Link',
                   onTap: () {
                     Navigator.pop(context);
@@ -347,7 +349,7 @@ ${widget.ad.tags.isNotEmpty ? 'Tags: ${widget.ad.tags.map((t) => '#${t.name}').j
                 ),
                 _buildShareOption(
                   context,
-                  icon: Icons.share,
+                  icon: Icons.share_rounded,
                   label: 'Share via...',
                   onTap: () {
                     Navigator.pop(context);
@@ -361,7 +363,7 @@ ${widget.ad.tags.isNotEmpty ? 'Tags: ${widget.ad.tags.map((t) => '#${t.name}').j
                 // For example, Instagram, WhatsApp, etc.
                 _buildShareOption(
                   context,
-                  icon: Icons.chat_bubble_outline,
+                  icon: Icons.chat_rounded,
                   label: 'Share to WhatsApp',
                   onTap: () {
                     Navigator.pop(context);
@@ -425,7 +427,9 @@ ${widget.ad.tags.isNotEmpty ? 'Tags: ${widget.ad.tags.map((t) => '#${t.name}').j
             Container(
               color: Colors.black87,
               child: const Center(
-                child: CircularProgressIndicator(color: Colors.white),
+                child: TikTokInjeraSpinner(
+                  size: 50,
+                ), // Updated to TikTok style spinner while loading video
               ),
             ),
 
@@ -451,21 +455,21 @@ ${widget.ad.tags.isNotEmpty ? 'Tags: ${widget.ad.tags.map((t) => '#${t.name}').j
               child: Center(
                 child: Icon(
                   widget.controller?.value.isPlaying == true
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_filled,
+                      ? Icons.pause_circle_filled_rounded
+                      : Icons.play_circle_filled_rounded,
                   size: 64,
                   color: Colors.white.withOpacity(0.9),
                 ),
               ),
             ),
 
-          // Side actions - REMOVED like button
+          // Side actions - UPDATED WITH MODERN ICONS
           Positioned(
             right: 16,
             bottom: 120,
             child: Column(
               children: [
-                // Comment button (unchanged)
+                // Comment button with modern icon
                 GestureDetector(
                   onTap: () {
                     showModalBottomSheet(
@@ -484,7 +488,8 @@ ${widget.ad.tags.isNotEmpty ? 'Tags: ${widget.ad.tags.map((t) => '#${t.name}').j
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
-                          Icons.comment_outlined,
+                          Icons
+                              .chat_bubble_outline_rounded, // Modern rounded icon
                           color: Colors.white,
                           size: 26,
                         ),
@@ -508,12 +513,18 @@ ${widget.ad.tags.isNotEmpty ? 'Tags: ${widget.ad.tags.map((t) => '#${t.name}').j
                   ),
                 ),
                 const SizedBox(height: 20),
-                _buildActionButton(Icons.bookmark_border, 'Save'),
+                _buildActionButton(
+                  Icons.bookmark_outline_rounded,
+                  'Save',
+                ), // Modern rounded icon
                 const SizedBox(height: 20),
-                // Updated Share button with onTap handler
+                // Updated Share button with modern icon
                 GestureDetector(
                   onTap: _shareVideo,
-                  child: _buildActionButton(Icons.share_outlined, 'Share'),
+                  child: _buildActionButton(
+                    Icons.share_rounded,
+                    'Share',
+                  ), // Modern rounded icon
                 ),
               ],
             ),
