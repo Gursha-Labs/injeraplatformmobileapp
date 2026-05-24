@@ -1,6 +1,7 @@
 // config/api_config.dart
 class ApiConfig {
-  static const String baseUrl = 'https://94f8-197-156-75-53.ngrok-free.app/api';
+  static const String baseUrl =
+      'https://hypergolic-erma-violably.ngrok-free.dev/api';
   //static const String baseUrl'https://hypergolic-erma-violably.ngrok-free.dev/api';
 
   static const Duration connectTimeout = Duration(seconds: 30);

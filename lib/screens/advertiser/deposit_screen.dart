@@ -49,7 +49,7 @@ class _DepositScreenState extends State<DepositScreen> {
   Future<void> _loadWalletBalance() async {
     try {
       final balance = await _apiService.getWalletBalance();
-      print("sssssssssssssssssssssssssssssssssssssssssss");
+
       print(balance);
       debugPrint('Balance loaded: $balance');
       setState(() {
