@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:injera/models/ad_feed_response.dart';
 
 class ApiService {
-  static const String _baseUrl = 'http://192.168.137.86:8000/api';
+  static const String _baseUrl =
+      'https://hypergolic-erma-violably.ngrok-free.dev/api';
 
   Future<AdFeedResponse> getAdsFeed({String? cursor}) async {
     try {

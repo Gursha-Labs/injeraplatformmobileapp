@@ -114,6 +114,78 @@ class ApiService {
     return false;
   }
 
+  // Add this method to your existing ApiService class
+
+  /// Change password for authenticated user
+  // Add this method to your existing ApiService class
+
+  /// Change password for authenticated user
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await _ensureInitialized();
+
+    try {
+      final response = await _dio!.post(
+        '/auth/change-password',
+        data: {
+          'current_password': currentPassword,
+          'password': newPassword,
+          'password_confirmation': confirmPassword,
+        },
+      );
+
+      debugPrint('Change password response status: ${response.statusCode}');
+      debugPrint('Change password response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        // Password changed successfully
+        // DO NOT clear tokens - keep user logged in
+        // Just return success
+        return true;
+      } else if (response.statusCode == 400) {
+        // Handle validation errors
+        final errorMessage =
+            response.data['message'] ?? 'Invalid current password';
+        throw Exception(errorMessage);
+      } else if (response.statusCode == 422) {
+        // Handle validation errors
+        final errors = response.data['errors'];
+        if (errors != null && errors.isNotEmpty) {
+          final firstError = errors.values.first;
+          throw Exception(firstError is List ? firstError.first : firstError);
+        }
+        throw Exception('Validation failed');
+      } else {
+        throw Exception('Failed to change password: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      debugPrint('Change password error: ${e.message}');
+      debugPrint('Error response: ${e.response?.data}');
+
+      if (e.response?.statusCode == 400) {
+        final errorMessage =
+            e.response?.data['message'] ?? 'Invalid current password';
+        throw Exception(errorMessage);
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('Session expired. Please login again.');
+      } else if (e.response?.statusCode == 422) {
+        final errors = e.response?.data['errors'];
+        if (errors != null && errors.isNotEmpty) {
+          final firstError = errors.values.first;
+          throw Exception(firstError is List ? firstError.first : firstError);
+        }
+        throw Exception('Please check your input and try again.');
+      }
+      throw Exception('Network error. Please check your connection.');
+    } catch (e) {
+      debugPrint('Unexpected error: $e');
+      rethrow;
+    }
+  }
+
   Future<AdvertiserProfile> getAdvertiserProfile() async {
     await _ensureInitialized();
 
@@ -165,6 +237,9 @@ class ApiService {
   // Add this method to your existing ApiService class in api_service.dart
 
   /// Get wallet balance
+  // Replace the existing getWalletBalance method with this:
+
+  /// Get wallet balance
   Future<double> getWalletBalance() async {
     await _ensureInitialized();
 
@@ -175,21 +250,35 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        // Handle your backend's response format
-        if (data['success'] == true && data['data'] != null) {
-          final balance = data['data']['balance'];
-          return (balance ?? 0).toDouble();
+        // Handle your backend's response format correctly
+        if (data is Map<String, dynamic>) {
+          // Check for success flag and data structure
+          if (data['success'] == true && data['data'] != null) {
+            final balanceData = data['data'];
+            // Handle balance that might be string or number
+            if (balanceData['balance'] != null) {
+              return double.parse(balanceData['balance'].toString());
+            }
+          }
+
+          // Fallback for direct balance
+          if (data['balance'] != null) {
+            return double.parse(data['balance'].toString());
+          }
         }
 
-        // Fallback for direct balance
-        if (data['balance'] != null) {
-          return (data['balance'] as num).toDouble();
-        }
+        return 0.0;
       }
 
       return 0.0;
     } on DioException catch (e) {
       debugPrint('Get wallet balance error: ${e.message}');
+      if (e.response?.statusCode == 401) {
+        debugPrint('Authentication error - token might be expired');
+      }
+      return 0.0;
+    } catch (e) {
+      debugPrint('Unexpected error getting wallet balance: $e');
       return 0.0;
     }
   }
